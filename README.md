@@ -15,6 +15,7 @@ ftulabs.github.io/
 │   └── style.css         # Global stylesheet (theme colors, layout, components)
 ├── js/
 │   └── main.js           # Navigation toggle & scroll reveal animations
+├── assets/               # Images, videos, and other media files
 └── blog/
     └── post-template.html  # Example blog post (use as template for new posts)
 ```
@@ -92,6 +93,79 @@ Open `research.html` and add a new `<div class="paper reveal">` block inside the
   </div>
 </div>
 ```
+
+### Add Images
+
+Place image files in an `assets/` or `images/` folder (create it if needed). Images inside `<article class="post-content">` are automatically styled (full-width, bordered). Use standard HTML:
+
+```html
+<!-- Basic image -->
+<img src="../assets/my-diagram.png" alt="Description of the image">
+
+<!-- Image with caption -->
+<figure>
+  <img src="../assets/results-chart.png" alt="Benchmark results">
+  <figcaption>Figure 1: Inference latency comparison across sequence lengths.</figcaption>
+</figure>
+```
+
+Supported formats: `.png`, `.jpg`, `.webp`, `.svg`, `.gif`. Keep images optimized for web (aim for < 500 KB per image).
+
+### Add Videos
+
+Embed videos directly or host them externally:
+
+```html
+<!-- Self-hosted video -->
+<video controls width="100%">
+  <source src="../assets/demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+<!-- YouTube embed -->
+<iframe width="100%" height="400" src="https://www.youtube.com/embed/VIDEO_ID"
+  frameborder="0" allowfullscreen></iframe>
+
+<!-- Vimeo embed -->
+<iframe width="100%" height="400" src="https://player.vimeo.com/video/VIDEO_ID"
+  frameborder="0" allowfullscreen></iframe>
+```
+
+For large video files, prefer hosting on YouTube/Vimeo and embedding via `<iframe>` rather than committing them to the repo.
+
+### Add Audio
+
+```html
+<!-- Audio player -->
+<audio controls>
+  <source src="../assets/podcast-episode.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+```
+
+Supported formats: `.mp3`, `.ogg`, `.wav`. For podcast-style content, consider hosting on an external platform and linking to it.
+
+### Add Other Embedded Content
+
+```html
+<!-- PDF embed -->
+<embed src="../assets/paper-draft.pdf" type="application/pdf" width="100%" height="600px">
+
+<!-- Interactive demo (CodePen, Observable, etc.) -->
+<iframe src="https://codepen.io/user/embed/pen-id" width="100%" height="400"
+  frameborder="0" allowfullscreen></iframe>
+
+<!-- Slides (Google Slides, Speaker Deck, etc.) -->
+<iframe src="https://docs.google.com/presentation/d/SLIDE_ID/embed"
+  width="100%" height="400" frameborder="0" allowfullscreen></iframe>
+```
+
+### Media Guidelines
+
+- **File organization:** Store media files in an `assets/` folder at the root. For blog-specific media, use `blog/assets/` or `assets/blog/`.
+- **File size:** Keep the repo lean. Avoid committing files larger than 10 MB. Use external hosting (YouTube, Vimeo, cloud storage) for large media.
+- **Alt text:** Always include descriptive `alt` attributes on `<img>` tags for accessibility.
+- **Responsive:** Images and videos use `max-width: 100%` by default and scale to fit their container.
 
 ## Theme
 
