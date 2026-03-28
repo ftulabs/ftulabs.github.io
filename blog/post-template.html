@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scaling Transformer Inference with Custom CUDA Kernels — FTU Labs</title>
+  <meta name="description" content="How we achieved 3x inference speedup on A100 GPUs by writing custom fused attention kernels.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80' fill='%2300ffa3'>&#9656;</text></svg>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-mono/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">FTU Labs<span>_</span></a>
+      <div class="nav-links">
+        <a href="../projects.html">projects</a>
+        <a href="../team.html">team</a>
+        <a href="../research.html">research</a>
+        <a href="../blog.html">blog</a>
+      </div>
+      <button class="nav-toggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+  <div class="nav-mobile">
+    <a href="../projects.html">projects</a>
+    <a href="../team.html">team</a>
+    <a href="../research.html">research</a>
+    <a href="../blog.html">blog</a>
+  </div>
+
+  <main class="page">
+    <div class="container">
+
+      <a href="../blog.html" class="post-back animate">&larr; back to blog</a>
+
+      <header class="post-header animate animate-d1">
+        <h1 class="post-title">Scaling Transformer Inference with Custom CUDA Kernels</h1>
+        <div class="post-meta">2026-03-15 &middot; Minh Tran, Alex Rivera &middot; 12 min read</div>
+      </header>
+
+      <article class="post-content animate animate-d2">
+        <p>
+          When we started optimizing inference for FTU-7B, our initial benchmarks showed that standard PyTorch attention was the primary bottleneck — accounting for roughly 60% of total inference time on A100 GPUs. This post describes how we wrote custom CUDA kernels to achieve a 3x speedup, and the lessons we learned along the way.
+        </p>
+
+        <h2>The Problem: Memory-Bound Attention</h2>
+        <p>
+          Transformer attention is fundamentally a memory-bound operation. The standard implementation materializes the full N&times;N attention matrix, requiring O(N&sup2;) memory and bandwidth. For long sequences (4K+ tokens), this becomes the dominant cost — not because of compute, but because of how data moves between GPU memory hierarchies.
+        </p>
+        <p>
+          Our profiling revealed that the standard attention path spent most of its time waiting for memory transfers rather than doing useful computation. The arithmetic intensity was well below what the A100 can sustain:
+        </p>
+
+<pre><code># Profiling results (A100 80GB, batch=1, seq_len=4096)
+Standard Attention:     142ms  (memory bandwidth: 1.2 TB/s)
+cuBLAS GEMM (Q&times;K):      38ms
+Softmax:                 24ms
+cuBLAS GEMM (A&times;V):      36ms
+Memory allocation:       44ms  &larr; the hidden cost</code></pre>
+
+        <p>
+          That 44ms spent on memory allocation alone was a red flag. Every forward pass was allocating and deallocating temporary buffers for the attention matrix — a pattern that's optimized away in Flash Attention but present in many standard implementations.
+        </p>
+
+        <h2>Our Approach: Fused Tiled Attention</h2>
+        <p>
+          Rather than computing attention in separate GEMM &rarr; softmax &rarr; GEMM stages, we fuse everything into a single kernel that operates on tiles of the input. This is conceptually similar to <a href="#">Flash Attention</a>, but with several modifications specific to our model architecture:
+        </p>
+        <ul>
+          <li><strong>Grouped-query attention (GQA)</strong> — FTU-7B uses 8 KV heads shared across 32 query heads, requiring careful shared memory management</li>
+          <li><strong>RoPE integration</strong> — We compute rotary position embeddings inside the kernel rather than as a separate pre-processing step</li>
+          <li><strong>Online softmax with FP32 accumulators</strong> — Maintaining numerical stability while keeping the data path in FP16/BF16</li>
+        </ul>
+
+        <h2>Implementation Details</h2>
+        <p>
+          The core idea is to tile the computation so that each thread block processes a block of queries against all key-value pairs, accumulating the output in shared memory:
+        </p>
+
+<pre><code>// Simplified kernel structure (actual implementation is ~800 lines)
+__global__ void fused_attention_kernel(
+    const half* __restrict__ Q,
+    const half* __restrict__ K,
+    const half* __restrict__ V,
+    half* __restrict__ O,
+    const int seq_len,
+    const int head_dim
+) {
+    // Each block handles BLOCK_M query positions
+    const int q_start = blockIdx.x * BLOCK_M;
+
+    // Shared memory for Q, K, V tiles
+    __shared__ half smem_q[BLOCK_M][HEAD_DIM];
+    __shared__ half smem_k[BLOCK_N][HEAD_DIM];
+    __shared__ half smem_v[BLOCK_N][HEAD_DIM];
+
+    // Online softmax state
+    float row_max = -INFINITY;
+    float row_sum = 0.0f;
+    float acc[BLOCK_M][HEAD_DIM] = {0};
+
+    // Iterate over K,V blocks
+    for (int kv_start = 0; kv_start &lt; seq_len; kv_start += BLOCK_N) {
+        load_tile(K, smem_k, kv_start);
+        load_tile(V, smem_v, kv_start);
+        __syncthreads();
+
+        // Compute QK^T, apply RoPE, scale, mask
+        // Online softmax update
+        // Accumulate O = softmax(QK^T) * V
+    }
+
+    store_output(O, acc, row_sum, q_start);
+}</code></pre>
+
+        <h2>Results</h2>
+        <p>
+          After several iterations of tuning tile sizes, shared memory layout, and warp scheduling, we achieved significant improvements across all sequence lengths:
+        </p>
+
+        <blockquote>
+          The key insight was not algorithmic — it was about understanding the GPU memory hierarchy deeply enough to keep the SMs fed with data at every cycle.
+        </blockquote>
+
+        <p>
+          On our standard benchmark (A100 80GB, BF16, batch size 1):
+        </p>
+        <ul>
+          <li>Seq 2048: <strong>2.1x speedup</strong> (68ms &rarr; 32ms)</li>
+          <li>Seq 4096: <strong>2.8x speedup</strong> (142ms &rarr; 51ms)</li>
+          <li>Seq 8192: <strong>3.2x speedup</strong> (412ms &rarr; 129ms)</li>
+          <li>Seq 16384: <strong>3.4x speedup</strong> (1.6s &rarr; 470ms)</li>
+        </ul>
+
+        <h2>Lessons Learned</h2>
+        <p>
+          Writing CUDA kernels is as much art as science. Here are the non-obvious lessons from this project:
+        </p>
+        <ol>
+          <li><strong>Profile before you optimize.</strong> Our initial assumption was that the GEMM operations were the bottleneck. They weren't — memory allocation and data layout were.</li>
+          <li><strong>Shared memory bank conflicts are real.</strong> A 2-line change to our memory layout (adding padding to avoid bank conflicts) gave us a 15% speedup.</li>
+          <li><strong>Test numerics obsessively.</strong> FP16 accumulation introduced subtle errors that only manifested at long sequence lengths. FP32 accumulators are non-negotiable.</li>
+        </ol>
+
+        <p>
+          The full kernel implementation is available in our <a href="#">FlashKernel repository</a>. We welcome contributions and benchmarks on other GPU architectures.
+        </p>
+      </article>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="footer-copy">&copy; 2026 FTU Labs</span>
+      <div class="footer-links">
+        <a href="https://github.com/ftulabs">GitHub</a>
+        <a href="https://twitter.com/ftulabs">Twitter</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>
