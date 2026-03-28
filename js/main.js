@@ -2,6 +2,25 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  // --- Theme toggle ---
+  const saved = localStorage.getItem('ftu-theme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+  }
+
+  document.querySelectorAll('.theme-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'light' ? 'dark' : 'light';
+      if (next === 'dark') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', next);
+      }
+      localStorage.setItem('ftu-theme', next);
+    });
+  });
+
   // --- Mobile navigation toggle ---
   const toggle = document.querySelector('.nav-toggle');
   const mobile = document.querySelector('.nav-mobile');

@@ -3,25 +3,25 @@
    ============================================ */
 
 :root {
-  --bg: #0a0608;
-  --bg-card: #110c0e;
-  --bg-card-hover: #1a1215;
-  --bg-nav: rgba(10, 6, 8, 0.92);
+  --bg: #060304;
+  --bg-card: #0e0809;
+  --bg-card-hover: #180e10;
+  --bg-nav: rgba(6, 3, 4, 0.94);
 
-  --text: #d4ccce;
-  --text-secondary: #8a7578;
-  --text-muted: #4a3a3d;
-  --text-heading: #f2eced;
+  --text: #e8e0e2;
+  --text-secondary: #a8949a;
+  --text-muted: #5c4a50;
+  --text-heading: #ffffff;
 
-  --accent: #C8102E;
-  --accent-hover: #e8233f;
+  --accent: #D41638;
+  --accent-hover: #f02848;
   --accent-dim: #8b0a1f;
-  --accent-bg: rgba(200, 16, 46, 0.08);
-  --accent-border: rgba(200, 16, 46, 0.25);
-  --accent-glow: rgba(200, 16, 46, 0.12);
+  --accent-bg: rgba(212, 22, 56, 0.10);
+  --accent-border: rgba(212, 22, 56, 0.30);
+  --accent-glow: rgba(212, 22, 56, 0.15);
 
-  --border: #201518;
-  --border-hover: #2e1e22;
+  --border: #2a181c;
+  --border-hover: #3a242a;
 
   --font: 'Geist Mono', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
 
@@ -31,6 +31,29 @@
 
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --duration: 200ms;
+}
+
+/* --- Light Theme --- */
+[data-theme="light"] {
+  --bg: #faf6f7;
+  --bg-card: #f0e8ea;
+  --bg-card-hover: #e8dde0;
+  --bg-nav: rgba(250, 246, 247, 0.94);
+
+  --text: #2a1418;
+  --text-secondary: #6b4a52;
+  --text-muted: #a08890;
+  --text-heading: #140a0c;
+
+  --accent: #B80D28;
+  --accent-hover: #9a0a20;
+  --accent-dim: #d44060;
+  --accent-bg: rgba(184, 13, 40, 0.07);
+  --accent-border: rgba(184, 13, 40, 0.20);
+  --accent-glow: rgba(184, 13, 40, 0.08);
+
+  --border: #dbc8cc;
+  --border-hover: #c8b0b6;
 }
 
 /* --- Reset --- */
@@ -57,15 +80,16 @@ body {
   overflow-x: hidden;
 }
 
-/* Subtle diagonal crosshatch background */
+/* Subtle crosshatch background */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(200, 16, 46, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(200, 16, 46, 0.015) 1px, transparent 1px);
+    linear-gradient(var(--accent-glow) 1px, transparent 1px),
+    linear-gradient(90deg, var(--accent-glow) 1px, transparent 1px);
   background-size: 48px 48px;
+  opacity: 0.15;
   pointer-events: none;
   z-index: 0;
 }
@@ -79,7 +103,7 @@ body::after {
   transform: translateX(-50%);
   width: 120%;
   height: 60%;
-  background: radial-gradient(ellipse, rgba(200, 16, 46, 0.04) 0%, transparent 70%);
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -905,6 +929,78 @@ ul, ol {
 
 .footer-links a:hover {
   color: var(--accent);
+}
+
+/* --- Theme Toggle --- */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all var(--duration) var(--ease);
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent-border);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.theme-toggle svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: block; }
+
+[data-theme="light"] .theme-toggle .icon-sun { display: block; }
+[data-theme="light"] .theme-toggle .icon-moon { display: none; }
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .nav-actions {
+    gap: 0.75rem;
+  }
+}
+
+/* Smooth theme transition */
+body,
+body::before,
+body::after,
+.nav,
+.nav-mobile,
+.card,
+.member,
+.focus-item,
+.footer,
+.btn,
+.tag,
+.theme-toggle,
+.member-avatar {
+  transition:
+    background-color 0.35s var(--ease),
+    border-color 0.35s var(--ease),
+    color 0.35s var(--ease),
+    box-shadow 0.35s var(--ease);
 }
 
 /* --- Animations --- */
