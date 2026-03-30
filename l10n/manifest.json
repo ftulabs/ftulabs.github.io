@@ -1,4 +1,13 @@
 {
+  "": ["en", "vi"],
+  "index.html": ["en", "vi"],
+  "blog.html": ["en", "vi"],
+  "projects.html": ["en", "vi"],
+  "team.html": ["en", "vi"],
+  "research.html": ["en", "vi"],
+  "blog/1.ftu-ai.html": ["en", "vi"],
+  "blog/2.lms.html": ["en", "vi"],
+  "blog/3.swarm.html": ["en", "vi"],
   "blog/4.introduction.html": ["en", "vi"],
   "blog/post-template.html": ["en", "vi"]
 }
