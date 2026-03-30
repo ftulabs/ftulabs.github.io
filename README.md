@@ -203,18 +203,25 @@ main (protected — always deployable)
 
 ```
 ftulabs.github.io/
-├── index.html            # Home page
-├── blog.html             # Blog listing page
-├── projects.html         # Projects page
-├── team.html             # Team members page
-├── research.html         # Research publications page
+├── index.html              # Home page
+├── blog.html               # Blog listing page
+├── projects.html           # Projects page
+├── team.html               # Team members page
+├── research.html           # Research publications page
 ├── css/
-│   └── style.css         # Global stylesheet (theme colors, layout, components)
+│   └── style.css           # Global stylesheet (theme, layout, scrollbar, copy button, hljs overrides)
 ├── js/
-│   └── main.js           # Navigation toggle & scroll reveal animations
-├── assets/               # Images, videos, and other media files
+│   ├── main.js             # Navigation toggle & scroll reveal animations
+│   └── hljs.js             # Highlight.js loader + copy button injection
+├── img/
+│   ├── logo.png            # Site logo
+│   └── copy.svg            # Copy icon source (inlined in hljs.js)
 └── blog/
-    └── post-template.html  # Example blog post (use as template for new posts)
+    ├── post-template.html  # Blog post template (use as starting point for new posts)
+    ├── 1.ftu-ai.html
+    ├── 2.lms.html
+    ├── 3.swarm.html
+    └── 4.introduction.html
 ```
 
 ## Adding New Content
@@ -229,6 +236,7 @@ This is a static HTML site with no build step. To add content, edit the HTML fil
    - Update the `<h1 class="post-title">` with your title.
    - Update the `<div class="post-meta">` with the date, authors, and read time.
    - Write your content inside `<article class="post-content">`. Use standard HTML tags (`<p>`, `<h2>`, `<code>`, `<pre>`, `<blockquote>`, etc.).
+   - For code blocks with **syntax highlighting**, see [Code Blocks with Syntax Highlighting](#code-blocks-with-syntax-highlighting) below.
 3. **Add to the blog listing:** Open `blog.html` and add a new `<div class="blog-item reveal">` entry inside the `<div class="blog-list">` section:
    ```html
    <div class="blog-item reveal">
@@ -238,6 +246,66 @@ This is a static HTML site with no build step. To add content, edit the HTML fil
    </div>
    ```
 4. **(Optional) Add to homepage:** If this is a featured post, add it to the latest section in `index.html`.
+
+### Code Blocks with Syntax Highlighting
+
+Blog posts use [Highlight.js](https://highlightjs.org/) (loaded via CDN) for automatic syntax highlighting. This is the HTML equivalent of Markdown fenced code blocks (`` ```python ``, `` ```bash ``, etc.).
+
+#### Setup (in each blog post that uses code blocks)
+
+Add the Highlight.js theme in `<head>`, **before** `style.css` (so the site's overrides win):
+
+```html
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css">
+<link rel="stylesheet" href="../css/style.css">
+```
+
+Add the loader script before `</body>`, after `main.js`:
+
+```html
+<script src="../js/hljs.js"></script>
+```
+
+The theme (`atom-one-dark`) provides the standard syntax colors. The site's `css/style.css` loads after it and overrides only the code block background to match the site theme. The script (`js/hljs.js`) fetches the Highlight.js core from the CDN, loads the extra language modules (LaTeX, Dockerfile, INI), calls `hljs.highlightAll()`, and injects a **copy button** into every `<pre>` block automatically.
+
+#### Copy button
+
+Every code block gets a copy-to-clipboard button (top-right corner, visible on hover). This is handled entirely by `js/hljs.js` — no extra markup needed. The button uses an inline SVG icon and briefly shows a checkmark after copying. Styling lives in `css/style.css` under `.copy-btn`.
+
+> **Note:** The default Highlight.js build covers ~40 common languages (bash, python, javascript, json, yaml, css, markdown, etc.) but does not include LaTeX, Dockerfile, or INI — those are bundled by `hljs.js`. To add more languages, edit the `queue` array in `js/hljs.js` (see the [full language list](https://highlightjs.org/download)).
+
+#### Writing code blocks
+
+Use `<pre><code class="language-xxx">` where `xxx` is the language identifier — just like `` ```xxx `` in Markdown:
+
+| Markdown equivalent | HTML                                              |
+| ------------------- | ------------------------------------------------- |
+| `` ```bash ``       | `<pre><code class="language-bash">`               |
+| `` ```python ``     | `<pre><code class="language-python">`             |
+| `` ```javascript `` | `<pre><code class="language-javascript">`         |
+| `` ```yaml ``       | `<pre><code class="language-yaml">`               |
+| `` ```json ``       | `<pre><code class="language-json">`               |
+| `` ```latex ``      | `<pre><code class="language-latex">`              |
+| `` ```dockerfile `` | `<pre><code class="language-dockerfile">`         |
+| `` ```ini ``        | `<pre><code class="language-ini">`                |
+| `` ```html ``       | `<pre><code class="language-html">`               |
+| `` ```css ``        | `<pre><code class="language-css">`                |
+| `` ```markdown ``   | `<pre><code class="language-markdown">`           |
+| `` ```plaintext ``  | `<pre><code class="language-plaintext">`          |
+
+**Example:**
+
+```html
+<pre><code class="language-python"># This will be syntax-highlighted as Python
+def hello(name: str) -> str:
+    """Greet someone."""
+    return f"Hello, {name}!"</code></pre>
+```
+
+> **Tip:** Use `language-plaintext` for code blocks that shouldn't be highlighted (e.g. ASCII diagrams, generic command output). If you omit the class entirely, Highlight.js will auto-detect the language, which may produce unexpected results.
+
+For a full list of supported languages, see the [Highlight.js supported languages page](https://highlightjs.org/download#702-languages-and-styles).
 
 ### Add a Team Member
 
