@@ -106,13 +106,11 @@
     var scripts = document.querySelectorAll('script[src*="l10n.js"]');
     for (var i = 0; i < scripts.length; i++) {
       var src = scripts[i].getAttribute("src") || "";
-      // src is something like "../js/l10n.js" or "../../js/l10n.js" or "js/l10n.js"
       var idx = src.indexOf("js/l10n.js");
       if (idx !== -1) {
         return src.substring(0, idx);
       }
     }
-    // Fallback: compute from pathname depth
     var depth = location.pathname.replace(/^\//, "").split("/").length - 1;
     var prefix = "";
     for (var j = 0; j < depth; j++) {
@@ -128,7 +126,7 @@
   }
 
   // -------------------------------------------------------------------------
-  // Build the dropdown UI inside every .lang-switch placeholder
+  // Build the custom dropdown UI inside every .lang-switch placeholder
   // -------------------------------------------------------------------------
 
   function buildSwitcher(manifest) {
@@ -142,7 +140,7 @@
       var sw = containers[c];
       sw.innerHTML = "";
 
-      // --- Toggle button (shows current language flag + code + chevron) ---
+      // --- Toggle button (flag + label + chevron) ---
       var toggle = document.createElement("button");
       toggle.className = "lang-toggle";
       toggle.type = "button";
@@ -150,12 +148,8 @@
       toggle.setAttribute("aria-haspopup", "listbox");
       toggle.setAttribute("aria-label", "Change language");
       toggle.innerHTML =
-        '<span class="lang-flag">' +
-        currentInfo.flag +
-        "</span>" +
-        '<span class="lang-code">' +
-        currentLang.toUpperCase() +
-        "</span>" +
+        '<span class="lang-flag">' + currentInfo.flag + "</span>" +
+        '<span class="lang-code">' + currentInfo.label + "</span>" +
         CHEVRON_SVG;
 
       // --- Dropdown menu ---
@@ -173,12 +167,8 @@
         option.setAttribute("role", "option");
         option.setAttribute("data-lang", lang.code);
         option.innerHTML =
-          '<span class="lang-flag">' +
-          lang.flag +
-          "</span>" +
-          '<span class="lang-label">' +
-          lang.label +
-          "</span>";
+          '<span class="lang-flag">' + lang.flag + "</span>" +
+          '<span class="lang-label">' + lang.label + "</span>";
 
         if (isActive) {
           option.classList.add("active");
@@ -205,13 +195,13 @@
       sw.appendChild(menu);
 
       // --- Toggle open/close ---
-      (function (toggleBtn, menuEl, container) {
+      (function (toggleBtn, container) {
         toggleBtn.addEventListener("click", function (e) {
           e.stopPropagation();
-          var open = container.classList.toggle("open");
-          toggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+          var isOpen = container.classList.toggle("open");
+          toggleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
         });
-      })(toggle, menu, sw);
+      })(toggle, sw);
     }
 
     // Close all dropdowns when clicking outside
