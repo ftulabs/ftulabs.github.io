@@ -635,14 +635,15 @@ ol {
     background: var(--bg-card);
     border: 1px solid var(--border);
     padding: 1.25rem;
-    overflow-x: auto;
+    overflow-x: hidden;
     margin-bottom: 0.75rem;
     font-size: 0.8125rem;
     line-height: 1.65;
-    scrollbar-width: none;
+    position: relative;
 }
 
 .post-content pre:hover {
+    overflow-x: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--accent) transparent;
 }
@@ -650,7 +651,6 @@ ol {
 /* Webkit scrollbar (Chrome, Safari, Edge) */
 .post-content pre::-webkit-scrollbar {
     height: 6px;
-    background: transparent;
 }
 
 .post-content pre::-webkit-scrollbar-track,
@@ -659,19 +659,16 @@ ol {
 }
 
 .post-content pre::-webkit-scrollbar-button {
-    display: none;
+    width: 0;
+    height: 0;
 }
 
 .post-content pre::-webkit-scrollbar-thumb {
-    background: transparent;
+    background: var(--accent);
     border-radius: 3px;
 }
 
-.post-content pre:hover::-webkit-scrollbar-thumb {
-    background: var(--accent);
-}
-
-.post-content pre:hover::-webkit-scrollbar-thumb:active {
+.post-content pre::-webkit-scrollbar-thumb:active {
     background: var(--accent-hover);
 }
 
