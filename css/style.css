@@ -517,15 +517,41 @@ ol {
 .blog-item {
     padding: 1.25rem 0;
     border-bottom: 1px solid var(--border);
-    transition: padding-left var(--duration) var(--ease);
+    position: relative;
 }
 
 .blog-item:first-child {
     border-top: 1px solid var(--border);
 }
 
-.blog-item:hover {
-    padding-left: 0.5rem;
+/* Center-out red line animation on hover */
+.blog-item::before,
+.blog-item::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    height: 1px;
+    width: 0;
+    background: var(--accent-dim);
+    transition: width 0.3s var(--ease), left 0.3s var(--ease);
+}
+
+.blog-item::before {
+    top: -1px;
+}
+
+.blog-item::after {
+    bottom: -1px;
+}
+
+.blog-item:first-child::before {
+    top: -1px;
+}
+
+.blog-item:hover::before,
+.blog-item:hover::after {
+    width: 100%;
+    left: 0;
 }
 
 .blog-date {
