@@ -81,6 +81,25 @@ body {
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
     overflow-x: hidden;
+    -webkit-tap-highlight-color: rgba(224, 27, 60, 0.15);
+}
+
+::selection {
+    background: rgba(224, 27, 60, 0.3);
+    color: inherit;
+}
+
+::-moz-selection {
+    background: rgba(224, 27, 60, 0.3);
+    color: inherit;
+}
+
+[data-theme="light"] ::selection {
+    background: rgba(192, 16, 48, 0.2);
+}
+
+[data-theme="light"] ::-moz-selection {
+    background: rgba(192, 16, 48, 0.2);
 }
 
 /* Subtle grid background */
