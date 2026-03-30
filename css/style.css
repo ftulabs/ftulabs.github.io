@@ -714,8 +714,6 @@ ol {
     width: 16px;
     height: 16px;
     color: var(--text-secondary);
-    border: none;
-    margin: 0;
 }
 
 .code-body {
@@ -821,7 +819,7 @@ ol {
 }
 
 .post-content img {
-    border: 1px solid var(--border);
+    border: none;
     margin: 1.5rem 0;
 }
 
