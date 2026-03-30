@@ -707,16 +707,12 @@ ol {
     background: var(--bg-card);
     color: var(--text-muted);
     cursor: pointer;
-    opacity: 0;
+    opacity: 1;
     transition:
         opacity var(--duration) var(--ease),
         color var(--duration) var(--ease),
         background var(--duration) var(--ease),
         border-color var(--duration) var(--ease);
-}
-
-.post-content pre:hover .copy-btn {
-    opacity: 1;
 }
 
 .copy-btn:hover {
