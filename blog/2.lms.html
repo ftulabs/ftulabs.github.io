@@ -1,67 +1,104 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Running Moodle CodeRunner on a Docker Swarm — FTU Labs</title>
-  <meta name="description" content="How we deployed Moodle with CodeRunner and a distributed Jobe sandbox across a Docker Swarm cluster for live code grading.">
-  <link rel="icon" href="../img/logo.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css">
-  <link rel="stylesheet" href="../css/style.css">
-</head>
-<body>
-
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="../index.html" class="nav-logo"><img src="../img/logo.png" alt="FTU">FTU Labs</a>
-      <div class="nav-actions">
-        <div class="nav-links">
-          <a href="../projects.html">projects</a>
-          <a href="../team.html">team</a>
-          <a href="../research.html">research</a>
-          <a href="../blog.html">blog</a>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Running Moodle CodeRunner on a Docker Swarm — FTU Labs</title>
+        <meta
+            name="description"
+            content="How we deployed Moodle with CodeRunner and a distributed Jobe sandbox across a Docker Swarm cluster for live code grading."
+        />
+        <link rel="icon" href="../img/logo.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="../vendor/hljs/atom-one-dark.min.css" />
+        <link rel="stylesheet" href="../css/style.css" />
+    </head>
+    <body>
+        <nav class="nav">
+            <div class="nav-inner">
+                <a href="../index.html" class="nav-logo"
+                    ><img src="../img/logo.png" alt="FTU" />FTU Labs</a
+                >
+                <div class="nav-actions">
+                    <div class="nav-links">
+                        <a href="../projects.html">projects</a>
+                        <a href="../team.html">team</a>
+                        <a href="../research.html">research</a>
+                        <a href="../blog.html">blog</a>
+                    </div>
+                    <button class="theme-toggle" aria-label="Toggle theme">
+                        <svg class="icon-moon" viewBox="0 0 24 24">
+                            <path
+                                d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+                            />
+                        </svg>
+                        <svg class="icon-sun" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="5" />
+                            <line x1="12" y1="1" x2="12" y2="3" />
+                            <line x1="12" y1="21" x2="12" y2="23" />
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                            <line x1="1" y1="12" x2="3" y2="12" />
+                            <line x1="21" y1="12" x2="23" y2="12" />
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                        </svg>
+                    </button>
+                    <button class="nav-toggle" aria-label="Toggle menu">
+                        <span></span><span></span><span></span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div class="nav-mobile">
+            <a href="../projects.html">projects</a>
+            <a href="../team.html">team</a>
+            <a href="../research.html">research</a>
+            <a href="../blog.html">blog</a>
         </div>
-        <button class="theme-toggle" aria-label="Toggle theme">
-          <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-        </button>
-        <button class="nav-toggle" aria-label="Toggle menu">
-          <span></span><span></span><span></span>
-        </button>
-      </div>
-    </div>
-  </nav>
-  <div class="nav-mobile">
-    <a href="../projects.html">projects</a>
-    <a href="../team.html">team</a>
-    <a href="../research.html">research</a>
-    <a href="../blog.html">blog</a>
-  </div>
 
-  <main class="page">
-    <div class="container">
+        <main class="page">
+            <div class="container">
+                <a href="../blog.html" class="post-back animate"
+                    >&larr; back to blog</a
+                >
 
-      <a href="../blog.html" class="post-back animate">&larr; back to blog</a>
+                <header class="post-header animate animate-d1">
+                    <h1 class="post-title">
+                        Running Moodle CodeRunner on a Docker Swarm
+                    </h1>
+                    <div class="post-meta">
+                        2026-01-25 &middot; FTU Labs &middot; 7 min read
+                    </div>
+                </header>
 
-      <header class="post-header animate animate-d1">
-        <h1 class="post-title">Running Moodle CodeRunner on a Docker Swarm</h1>
-        <div class="post-meta">2026-01-25 &middot; FTU Labs &middot; 7 min read</div>
-      </header>
+                <article class="post-content animate animate-d2">
+                    <p>
+                        We needed a way for students to write and submit code
+                        directly inside Moodle quizzes &mdash; with instant,
+                        automated grading. The answer was
+                        <strong>CodeRunner</strong> with a distributed
+                        <strong>Jobe</strong> sandbox running across our Docker
+                        Swarm. The LMS is live at
+                        <a href="https://ftds.online">ftds.online</a>.
+                    </p>
 
-      <article class="post-content animate animate-d2">
-        <p>
-          We needed a way for students to write and submit code directly inside Moodle quizzes &mdash; with instant, automated grading. The answer was <strong>CodeRunner</strong> with a distributed <strong>Jobe</strong> sandbox running across our Docker Swarm. The LMS is live at <a href="https://ftds.online">ftds.online</a>.
-        </p>
+                    <h2>Architecture</h2>
+                    <p>
+                        Moodle runs on a DigitalOcean VPS. When a student
+                        submits code, CodeRunner sends the job to
+                        <code>jobe.ftds.online</code>, which tunnels into our
+                        on-premise Docker Swarm via <strong>frp</strong>.
+                        HAProxy load-balances across Jobe instances &mdash; one
+                        per swarm node.
+                    </p>
 
-        <h2>Architecture</h2>
-        <p>
-          Moodle runs on a DigitalOcean VPS. When a student submits code, CodeRunner sends the job to <code>jobe.ftds.online</code>, which tunnels into our on-premise Docker Swarm via <strong>frp</strong>. HAProxy load-balances across Jobe instances &mdash; one per swarm node.
-        </p>
-
-<pre><code class="language-plaintext">Students &rarr; ftds.online (DigitalOcean VPS)
+                    <pre><code class="language-plaintext">Students &rarr; ftds.online (DigitalOcean VPS)
               ├── ftds.online       &rarr; Moodle / Apache
               └── jobe.ftds.online  &rarr; frp tunnel
                                         &darr;
@@ -69,34 +106,56 @@
                                         &darr;
                               Jobe instances (1 per swarm node)</code></pre>
 
-        <ul>
-          <li><strong>Moodle + Apache</strong> &mdash; hosted on a VPS, serves the LMS frontend</li>
-          <li><strong>Jobe (jobeinabox)</strong> &mdash; code execution sandbox, runs globally across all swarm nodes</li>
-          <li><strong>HAProxy</strong> &mdash; load balancer with health checks (<code>inter 10s</code>, <code>fall 5</code>, <code>rise 2</code>)</li>
-          <li><strong>frp tunnel</strong> &mdash; Docker Swarm service exposing the LB to Moodle via <code>jobe.ftds.online</code></li>
-        </ul>
+                    <ul>
+                        <li>
+                            <strong>Moodle + Apache</strong> &mdash; hosted on a
+                            VPS, serves the LMS frontend
+                        </li>
+                        <li>
+                            <strong>Jobe (jobeinabox)</strong> &mdash; code
+                            execution sandbox, runs globally across all swarm
+                            nodes
+                        </li>
+                        <li>
+                            <strong>HAProxy</strong> &mdash; load balancer with
+                            health checks (<code>inter 10s</code>,
+                            <code>fall 5</code>, <code>rise 2</code>)
+                        </li>
+                        <li>
+                            <strong>frp tunnel</strong> &mdash; Docker Swarm
+                            service exposing the LB to Moodle via
+                            <code>jobe.ftds.online</code>
+                        </li>
+                    </ul>
 
-        <h2>Setting Up the Swarm</h2>
-        <p>
-          All nodes must be on the same subnet. We set up routers in AP mode so every device shares the same IP range, then bootstrapped each node with a script:
-        </p>
+                    <h2>Setting Up the Swarm</h2>
+                    <p>
+                        All nodes must be on the same subnet. We set up routers
+                        in AP mode so every device shares the same IP range,
+                        then bootstrapped each node with a script:
+                    </p>
 
-<pre><code class="language-bash"># On the leader &mdash; initialize Docker Swarm
+                    <pre><code class="language-bash"># On the leader &mdash; initialize Docker Swarm
 docker swarm init --advertise-addr 10.0.190.70:2377
 
 # On each worker &mdash; fill in .env with token and leader IP, then:
 sudo ./swarm</code></pre>
 
-        <p>
-          The <code>swarm</code> script handles Docker installation (Ubuntu/Arch), user permissions, and joining the Swarm cluster automatically.
-        </p>
+                    <p>
+                        The <code>swarm</code> script handles Docker
+                        installation (Ubuntu/Arch), user permissions, and
+                        joining the Swarm cluster automatically.
+                    </p>
 
-        <h2>Deploying the Stack</h2>
-        <p>
-          With the swarm ready, we deploy three services: Jobe instances (one per node), HAProxy for load balancing, and an frp tunnel to expose the cluster to the Moodle VPS.
-        </p>
+                    <h2>Deploying the Stack</h2>
+                    <p>
+                        With the swarm ready, we deploy three services: Jobe
+                        instances (one per node), HAProxy for load balancing,
+                        and an frp tunnel to expose the cluster to the Moodle
+                        VPS.
+                    </p>
 
-<pre><code class="language-bash"># Import configs
+                    <pre><code class="language-bash"># Import configs
 docker config create haproxy_cfg ./haproxy.cfg
 docker config create frpc_cfg ./frpc.cfg
 
@@ -109,16 +168,23 @@ docker stack deploy -c portainer-agent-stack.yml portainer
 # Verify
 docker stack ps coderunner</code></pre>
 
-        <p>
-          Portainer gives us a web UI at port 9000 to monitor node health, container status, and cluster visualization across all swarm nodes.
-        </p>
+                    <p>
+                        Portainer gives us a web UI at port 9000 to monitor node
+                        health, container status, and cluster visualization
+                        across all swarm nodes.
+                    </p>
 
-        <h2>The frp Tunnel</h2>
-        <p>
-          Since the swarm runs on-premise behind NAT, we use <a href="https://github.com/fatedier/frp">frp</a> to create a reverse tunnel from the Moodle VPS to the swarm. The VPS runs <code>frps</code> listening on port 7000, and the swarm leader runs <code>frpc</code> as a Docker service:
-        </p>
+                    <h2>The frp Tunnel</h2>
+                    <p>
+                        Since the swarm runs on-premise behind NAT, we use
+                        <a href="https://github.com/fatedier/frp">frp</a> to
+                        create a reverse tunnel from the Moodle VPS to the
+                        swarm. The VPS runs <code>frps</code> listening on port
+                        7000, and the swarm leader runs <code>frpc</code> as a
+                        Docker service:
+                    </p>
 
-<pre><code class="language-ini"># frpc.toml (on swarm leader, runs as Docker service)
+                    <pre><code class="language-ini"># frpc.toml (on swarm leader, runs as Docker service)
 serverAddr = "ftds.online"
 serverPort = 7000
 auth.token = "..."
@@ -130,11 +196,13 @@ localIP = "lb"           # resolves on Docker overlay network
 localPort = 80
 customDomains = ["jobe.ftds.online"]</code></pre>
 
-        <p>
-          On the VPS side, Apache proxies <code>jobe.ftds.online</code> to the frp listener on port 8080:
-        </p>
+                    <p>
+                        On the VPS side, Apache proxies
+                        <code>jobe.ftds.online</code> to the frp listener on
+                        port 8080:
+                    </p>
 
-<pre><code class="language-bash"># /etc/apache2/sites-available/jobe.conf
+                    <pre><code class="language-bash"># /etc/apache2/sites-available/jobe.conf
 &lt;VirtualHost *:80&gt;
     ServerName jobe.ftds.online
     ProxyPreserveHost On
@@ -142,34 +210,50 @@ customDomains = ["jobe.ftds.online"]</code></pre>
     ProxyPassReverse / http://127.0.0.1:8080/
 &lt;/VirtualHost&gt;</code></pre>
 
-        <h2>SQL Support with sqlglot</h2>
-        <p>
-          We built a custom Jobe image that includes <a href="https://github.com/tobymao/sqlglot">sqlglot</a> for SQL transpilation. Students can write SQL in MySQL or T-SQL syntax, and the sandbox transparently transpiles it to SQLite before execution. This lets us use the lightweight <strong>AdventureWorksLT</strong> database (converted from SQL Server <code>.bak</code> to SQLite) without running a full database server.
-        </p>
+                    <h2>SQL Support with sqlglot</h2>
+                    <p>
+                        We built a custom Jobe image that includes
+                        <a href="https://github.com/tobymao/sqlglot">sqlglot</a>
+                        for SQL transpilation. Students can write SQL in MySQL
+                        or T-SQL syntax, and the sandbox transparently
+                        transpiles it to SQLite before execution. This lets us
+                        use the lightweight
+                        <strong>AdventureWorksLT</strong> database (converted
+                        from SQL Server <code>.bak</code> to SQLite) without
+                        running a full database server.
+                    </p>
 
-<pre><code class="language-bash"># Build custom Jobe image with sqlglot
+                    <pre><code class="language-bash"># Build custom Jobe image with sqlglot
 docker build -t ${REGISTRY}/jobe-sqlglot:latest ./jobe
 docker push ${REGISTRY}/jobe-sqlglot:latest
 
 # Deploy
 docker stack deploy -c docker-compose.yml coderunner</code></pre>
 
-        <p>
-          The CodeRunner template uses <code>sqlglot.transpile(sql, read="tsql", write="sqlite")</code> to handle T-SQL syntax like <code>TOP 5</code>, <code>ISNULL()</code>, and square bracket identifiers.
-        </p>
+                    <p>
+                        The CodeRunner template uses
+                        <code
+                            >sqlglot.transpile(sql, read="tsql",
+                            write="sqlite")</code
+                        >
+                        to handle T-SQL syntax like <code>TOP 5</code>,
+                        <code>ISNULL()</code>, and square bracket identifiers.
+                    </p>
 
-        <h2>Course Management</h2>
-        <p>
-          We wrote a shell script to clone courses for new semesters &mdash; copying activities, quizzes, question banks, and resources while stripping out student data:
-        </p>
+                    <h2>Course Management</h2>
+                    <p>
+                        We wrote a shell script to clone courses for new
+                        semesters &mdash; copying activities, quizzes, question
+                        banks, and resources while stripping out student data:
+                    </p>
 
-<pre><code class="language-bash"># Clone a course for a new semester
+                    <pre><code class="language-bash"># Clone a course for a new semester
 ./scripts/clone-course.sh 8 "TIN313(2627-1)GD1.01" \
   "TIN313(2627-1)GD1.01 - CO SO DU LIEU - Minh" "2026-09-01"</code></pre>
 
-        <h2>Repo Structure</h2>
+                    <h2>Repo Structure</h2>
 
-<pre><code class="language-plaintext">ftulabs/coderunner          # Swarm bootstrap scripts
+                    <pre><code class="language-plaintext">ftulabs/coderunner          # Swarm bootstrap scripts
 ├── swarm                   # Node bootstrap (Docker + Swarm join)
 ├── swarm.ps1               # Windows variant
 ├── allow-ports             # Firewall rules
@@ -188,29 +272,42 @@ ftulabs/moodle-coderunner   # Moodle integration
     ├── AdventureWorksLT2019.db
     └── sql_quizzes.xml     # Quiz questions (Moodle XML)</code></pre>
 
-        <h2>Links</h2>
-        <ul>
-          <li><a href="https://ftds.online">ftds.online</a> &mdash; live LMS</li>
-          <li><a href="https://github.com/ftulabs/coderunner">ftulabs/coderunner</a> &mdash; Swarm bootstrap scripts</li>
-          <li><a href="https://github.com/ftulabs/moodle-coderunner">ftulabs/moodle-coderunner</a> &mdash; Moodle CodeRunner deployment and course tools</li>
-        </ul>
+                    <h2>Links</h2>
+                    <ul>
+                        <li>
+                            <a href="https://ftds.online">ftds.online</a>
+                            &mdash; live LMS
+                        </li>
+                        <li>
+                            <a href="https://github.com/ftulabs/coderunner"
+                                >ftulabs/coderunner</a
+                            >
+                            &mdash; Swarm bootstrap scripts
+                        </li>
+                        <li>
+                            <a
+                                href="https://github.com/ftulabs/moodle-coderunner"
+                                >ftulabs/moodle-coderunner</a
+                            >
+                            &mdash; Moodle CodeRunner deployment and course
+                            tools
+                        </li>
+                    </ul>
+                </article>
+            </div>
+        </main>
 
-      </article>
+        <footer class="footer">
+            <div class="footer-inner">
+                <span class="footer-copy">&copy; 2026 FTU Labs</span>
+                <div class="footer-links">
+                    <a href="https://github.com/ftulabs">GitHub</a>
+                    <a href="https://twitter.com/ftulabs">Twitter</a>
+                </div>
+            </div>
+        </footer>
 
-    </div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-      <span class="footer-copy">&copy; 2026 FTU Labs</span>
-      <div class="footer-links">
-        <a href="https://github.com/ftulabs">GitHub</a>
-        <a href="https://twitter.com/ftulabs">Twitter</a>
-      </div>
-    </div>
-  </footer>
-
-  <script src="../js/main.js"></script>
-  <script src="../js/hljs.js"></script>
-</body>
+        <script src="../js/main.js" defer></script>
+        <script src="../js/hljs.js" defer></script>
+    </body>
 </html>
