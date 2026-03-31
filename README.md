@@ -1,19 +1,130 @@
 # FTU Labs Website
 
-Static website for FTU Labs, hosted on GitHub Pages at [ftulabs.github.io](https://ftulabs.github.io).
+Static website for [FTU Labs](https://ftulabs.github.io), hosted on GitHub Pages.
 
-## Contributing Guide (For Students)
+---
 
-Follow these steps every time you make a change. This workflow mirrors how professional teams ship code — learning it now will serve you in internships, open-source projects, and your career.
+## Table of Contents
 
-### 1. Clone the Repo (First Time Only)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [Contributing Guide](#contributing-guide)
+  - [1. Clone the Repo](#1-clone-the-repo)
+  - [2. Create a Branch](#2-create-a-branch)
+  - [3. Write Clean Code](#3-write-clean-code)
+  - [4. Push and Open a Pull Request](#4-push-and-open-a-pull-request)
+  - [5. After Your PR Is Merged](#5-after-your-pr-is-merged)
+- [Writing Blog Posts](#writing-blog-posts)
+  - [Option A: Write in Markdown (Recommended)](#option-a-write-in-markdown-recommended)
+  - [Option B: Write HTML Manually](#option-b-write-html-manually)
+- [Adding Other Content](#adding-other-content)
+  - [Team Members](#team-members)
+  - [Projects](#projects)
+  - [Research Papers](#research-papers)
+- [Media](#media)
+  - [Images](#images)
+  - [Videos](#videos)
+  - [Audio](#audio)
+  - [Other Embeds](#other-embeds)
+  - [Media Guidelines](#media-guidelines)
+- [Code Blocks & Syntax Highlighting](#code-blocks--syntax-highlighting)
+- [Localization (l10n)](#localization-l10n)
+  - [How It Works](#how-it-works)
+  - [Translate an Existing Page](#translate-an-existing-page)
+  - [Add a New Language](#add-a-new-language)
+- [Tooling & Automation](#tooling--automation)
+  - [Markdown-to-Post Converter](#markdown-to-post-converter)
+  - [Cache Busting](#cache-busting)
+  - [Vendor Library Updates](#vendor-library-updates)
+- [Theme & Customization](#theme--customization)
+- [Development](#development)
+- [Deployment](#deployment)
+
+---
+
+## Quick Start
+
+```bash
+# 1. Clone
+git clone https://github.com/ftulabs/ftulabs.github.io.git
+cd ftulabs.github.io
+
+# 2. Preview locally
+python3 -m http.server 8000        # then open http://localhost:8000
+
+# 3. Write a blog post in Markdown
+python3 scripts/md2post.py blog/my-post.md
+
+# 4. Commit and push
+git add -A
+git commit -m "blog: Add my new post"
+git push origin main
+```
+
+That's it. The GitHub Actions workflow handles cache-busting automatically on push — no extra steps needed.
+
+---
+
+## Project Structure
+
+```
+ftulabs.github.io/
+├── index.html                  # Home page
+├── blog.html                   # Blog listing page
+├── projects.html               # Projects page
+├── team.html                   # Team members page
+├── research.html               # Research publications page
+│
+├── blog/                       # Blog posts
+│   ├── 1.ftu-ai.html
+│   ├── 2.lms.html
+│   ├── 3.swarm.html
+│   ├── 4.introduction.html
+│   ├── post-template.html      # HTML reference template
+│   └── post-template.md        # Markdown reference template
+│
+├── css/
+│   └── style.css               # Global stylesheet
+├── js/
+│   ├── main.js                 # Nav toggle, scroll-reveal animations
+│   ├── hljs.js                 # Syntax highlighting + copy button injection
+│   └── l10n.js                 # Language switcher & auto-detection
+├── img/                        # All images (root-relative paths)
+├── vendor/
+│   └── hljs/                   # Highlight.js core + language modules
+│
+├── vi/                         # Vietnamese translations (mirrors root)
+│   ├── index.html
+│   ├── blog.html
+│   ├── blog/
+│   └── …
+├── l10n/
+│   └── manifest.json           # Maps pages → available translations
+│
+├── scripts/
+│   ├── md2post.py              # Markdown → blog post converter
+│   └── update_vendor.py        # Vendor library updater
+├── cachebust.sh                # Asset version stamper (content-hash)
+│
+└── .github/workflows/
+    ├── cachebust.yml           # Auto-stamps CSS/JS versions on push
+    └── update-vendor-libs.yml  # Weekly vendor library update
+```
+
+---
+
+## Contributing Guide
+
+This workflow mirrors how professional teams ship code — learning it now will serve you in internships, open-source projects, and your career.
+
+### 1. Clone the Repo
 
 ```bash
 git clone https://github.com/ftulabs/ftulabs.github.io.git
 cd ftulabs.github.io
 ```
 
-If you already cloned it before, make sure you're up to date:
+Already cloned? Make sure you're up to date:
 
 ```bash
 git checkout main
@@ -28,169 +139,123 @@ git pull origin main
 git checkout -b <type>/<short-description>
 ```
 
-Branch naming conventions:
-
-| Type        | When to use                        | Example                            |
-| ----------- | ---------------------------------- | ---------------------------------- |
-| `feature/`  | Adding something new               | `feature/add-member-nguyen-van-a`  |
-| `fix/`      | Fixing a bug or typo               | `fix/broken-nav-link`              |
-| `blog/`     | Adding or editing a blog post      | `blog/intro-to-ml-post`            |
-| `docs/`     | Updating documentation             | `docs/update-readme`               |
-| `refactor/` | Restructuring without new features | `refactor/css-variables`           |
-| `l10n/`     | Translating a page to a new locale | `l10n/vi/blog/4.introduction`      |
+| Type        | When to use                        | Example                           |
+| ----------- | ---------------------------------- | --------------------------------- |
+| `feature/`  | Adding something new               | `feature/add-member-nguyen-van-a` |
+| `fix/`      | Fixing a bug or typo               | `fix/broken-nav-link`             |
+| `blog/`     | Adding or editing a blog post      | `blog/intro-to-ml-post`          |
+| `docs/`     | Updating documentation             | `docs/update-readme`              |
+| `refactor/` | Restructuring without new features | `refactor/css-variables`          |
+| `l10n/`     | Translating a page to a new locale | `l10n/vi/blog/4.introduction`     |
 
 > **Why branches?** They isolate your work so a half-finished change never breaks the live site. They also make code review possible — your teammates can see exactly what changed.
 
 ### 3. Write Clean Code
 
-Before you commit anything, make sure your code is clean and readable. Here are the rules:
-
 #### Use Meaningful Names
 
 ```html
-<!-- Bad -->
-<div class="x1">
-  <div class="a"></div>
+<!-- ❌ Bad -->
+<div class="x">
+  <div class="a">stuff</div>
 </div>
 
-<!-- Good -->
-<div class="member-card">
-  <div class="member-avatar"></div>
+<!-- ✅ Good -->
+<div class="member">
+  <div class="member-name">Minh Tran</div>
 </div>
 ```
 
 #### Comment the "Why", Not the "What"
 
-Comments should explain **why** something exists or **why** a non-obvious decision was made — not repeat what the code already says.
-
-```css
-/* Bad — restates what the code does */
-/* Set color to red */
-color: #8B1A1A;
-
-/* Good — explains the reason behind the choice */
-/* FTU official crimson — matches university branding guidelines */
-color: #8B1A1A;
-```
-
 ```html
-<!-- Bad — obvious from the tag itself -->
+<!-- ❌ Bad: just restates the code -->
 <!-- This is a paragraph -->
 <p>Welcome to FTU Labs.</p>
 
-<!-- Good — explains a decision that isn't obvious -->
-<!-- Using <details> instead of JS toggle for accessibility and zero-JS support -->
-<details>
-  <summary>Show more</summary>
-  <p>Additional content here.</p>
-</details>
+<!-- ✅ Good: explains intent -->
+<!-- Shown only on the home page; blog.html has its own intro -->
+<p>Welcome to FTU Labs.</p>
 ```
 
-```js
-// Bad — describes what the code does
-// Loop through items
-items.forEach(item => { ... });
+For complex or collapsible sections, use HTML comments as markers:
 
-// Good — explains intent
-// Stagger reveal animations so cards don't all appear at once
-items.forEach((item, i) => {
-  item.style.transitionDelay = `${i * 100}ms`;
-});
+```html
+<!-- ============================================ -->
+<!-- OLYMPIC TIN HOC -->
+<!-- ============================================ -->
+<h2>Olympic Tin học 2025</h2>
+
+<details>
+  <summary>Show detailed results</summary>
+  <p>…</p>
+</details>
 ```
 
 #### Keep It Consistent
 
-- Use **2-space indentation** for HTML, CSS, and JS (match the existing files).
-- Use **lowercase with hyphens** for CSS classes: `blog-title`, not `blogTitle` or `Blog_Title`.
-- Keep lines under **100 characters** when possible.
-- Remove dead code — don't comment it out "just in case" (that's what git history is for).
+- Indent with **4 spaces** (not tabs).
+- Use **double quotes** for HTML attributes.
+- Use **root-relative paths** for assets: `/img/logo.png`, `/css/style.css`.
+- Match the style of surrounding code — if a file uses a certain pattern, follow it.
 
 #### Keep Commits Small and Focused
 
-Each commit should do **one thing**. If you added a team member and also fixed a typo in the blog, make two commits:
+Each commit should do **one thing** and have a clear message.
 
 ```bash
-# Stage only the team page change
-git add team.html
-git commit -m "Add Nguyen Van A to team page"
+# ❌ Bad
+git commit -m "changes"
+git commit -m "update stuff"
 
-# Stage only the blog fix
-git add blog.html
-git commit -m "Fix typo in ML blog post title"
+# ✅ Good — follows the project's convention:
+git commit -m "blog: Add Docker Swarm cluster post"
+git commit -m "css: Fix code block scrollbar spacing"
+git commit -m "l10n(vi): Translate team page"
 ```
 
-Write commit messages in the **imperative mood** (like giving an order):
+Commit message format: `category: Short description`
 
-```
-# Good
-Add blog post about neural networks
-Fix navigation link on mobile
-Remove unused CSS class
+| Category    | Use for                              |
+| ----------- | ------------------------------------ |
+| `blog`      | Blog post content                    |
+| `site`      | Cross-cutting site changes           |
+| `css`       | Stylesheet changes                   |
+| `js`        | JavaScript changes                   |
+| `feature`   | New features                         |
+| `fix`       | Bug fixes                            |
+| `l10n`      | Localization / translations          |
+| `l10n(vi)`  | Vietnamese-specific translation      |
+| `docs`      | Documentation (README, comments)     |
+| `chore`     | Maintenance / tooling                |
 
-# Bad
-Added blog post
-fixed stuff
-changes
-```
-
-### 4. Push Your Branch and Open a Pull Request
+### 4. Push and Open a Pull Request
 
 ```bash
-git push origin <your-branch-name>
+git push origin feature/add-member-nguyen-van-a
 ```
 
-Then open a Pull Request (PR) on GitHub:
-
-1. Go to the repo on GitHub. You'll see a banner saying your branch was recently pushed — click **"Compare & pull request"**.
-2. Fill in the PR template:
-   - **Title:** Short and descriptive (e.g., `Add Nguyen Van A to team page`).
-   - **Description:** Explain **what** you changed and **why**. Include a screenshot if it's a visual change.
-3. **Request a review** from at least one teammate.
-4. Wait for feedback. If changes are requested, push new commits to the same branch — the PR updates automatically.
-
-You can also create a PR from the command line:
-
-```bash
-gh pr create --title "Add Nguyen Van A to team page" --body "Added new member profile with bio and links."
-```
+Then open a Pull Request on GitHub. In the PR description, explain **what** you changed and **why**.
 
 #### PR Checklist
 
-Before marking your PR as ready, verify:
-
-- [ ] I created a branch (not committing to `main` directly)
-- [ ] I tested my changes locally (opened the HTML in a browser)
-- [ ] My code follows the existing style (indentation, class naming)
-- [ ] My commits are small, focused, and have clear messages
-- [ ] I described what changed and why in the PR description
+- [ ] Branch is up to date with `main`
+- [ ] Changes preview correctly in a local browser
+- [ ] No broken links or missing images
+- [ ] Commit messages follow the convention
+- [ ] Code is clean (no debug logs, commented-out junk, etc.)
+- [ ] If adding a blog post, it appears in `blog.html`
+- [ ] If translating, `l10n/manifest.json` is updated
 
 ### 5. After Your PR Is Merged
-
-Switch back to `main`, pull the latest changes, and **delete your branch both locally and on GitHub**:
 
 ```bash
 git checkout main
 git pull origin main
-
-# Delete the local branch
-git branch -d <your-branch-name>
-
-# Delete the branch on GitHub (required — otherwise it stays visible on the remote)
-git push origin --delete <your-branch-name>
+git branch -d feature/add-member-nguyen-van-a    # delete local branch
 ```
 
-> **Why do deleted branches still show up on GitHub?**
-> `git branch -d` only removes the **local** branch. The branch on GitHub is a separate copy — you must explicitly delete it with `git push origin --delete <branch>`. If you skip this step, stale branches pile up on the remote repo.
->
-> **If the branch was already deleted on GitHub** (e.g., via the "Delete branch" button after merging the PR), clean up your local stale references with:
->
-> ```bash
-> git fetch --prune
-> ```
->
-> **Tip for repo admins:** Enable **Settings → General → Pull Requests → "Automatically delete head branches"** on GitHub so merged branches are removed automatically.
-
-### Quick Reference
+#### Quick Reference
 
 ```
 main (protected — always deployable)
@@ -200,123 +265,142 @@ main (protected — always deployable)
       └── → Open PR → Code review → Merge → Done
 ```
 
-## Project Structure
+---
 
-```
-ftulabs.github.io/
-├── index.html              # Home page
-├── blog.html               # Blog listing page
-├── projects.html           # Projects page
-├── team.html               # Team members page
-├── research.html           # Research publications page
-├── css/
-│   └── style.css           # Global stylesheet (theme, layout, scrollbar, copy button, hljs overrides)
-├── js/
-│   ├── main.js             # Navigation toggle & scroll reveal animations
-│   ├── hljs.js             # Highlight.js loader + copy button injection
-│   └── l10n.js             # Language switcher, auto-detection & URL routing
-├── l10n/
-│   └── manifest.json       # Maps pages to available translations
-├── vi/                     # Vietnamese translations (mirrors root structure)
-│   └── blog/
-│       ├── 4.introduction.html
-│       └── post-template.html
-├── img/
-│   ├── logo.png            # Site logo
-│   └── copy.svg            # Copy icon source (inlined in hljs.js)
-└── blog/
-    ├── post-template.html  # Blog post template (use as starting point for new posts)
-    ├── 1.ftu-ai.html
-    ├── 2.lms.html
-    ├── 3.swarm.html
-    └── 4.introduction.html
+## Writing Blog Posts
+
+### Option A: Write in Markdown (Recommended)
+
+The easiest way. Write a `.md` file, run the converter, and it generates the full HTML page + updates the blog listing automatically.
+
+#### 1. Create a Markdown file
+
+Create a file anywhere (e.g. `blog/my-post.md`) with front matter at the top:
+
+```markdown
+<!-- #!ftulabs-scripts
+title: My Post Title
+description: A short summary shown in the blog listing.
+date: 2026-04-01
+authors: Alice, Bob
+readtime: 8 min
+lang: en
+-->
+
+Your content here in standard Markdown…
 ```
 
-## Adding New Content
+| Field         | Required | Description                                          |
+| ------------- | -------- | ---------------------------------------------------- |
+| `title`       | ✅       | Post title (used in `<title>`, heading, listing)     |
+| `description` | ✅       | One-line summary (used in `<meta>` and blog listing) |
+| `date`        | ✅       | Publication date in `YYYY-MM-DD` format              |
+| `authors`     | ✅       | Comma-separated author names                         |
+| `readtime`    | ✅       | Estimated reading time (e.g. `8 min`)                |
+| `lang`        | ✅       | `en` for English, `vi` for Vietnamese                |
 
-This is a static HTML site with no build step. To add content, edit the HTML files directly and commit.
+#### 2. Write the body in Markdown
 
-### Add a Blog Post
+All standard Markdown features are supported:
 
-1. **Create the post file:** Copy `blog/post-template.html` to a new file in the `blog/` folder (e.g. `blog/my-new-post.html`).
-2. **Edit the post content:**
-   - Update the `<title>` and `<meta name="description">` in `<head>`.
-   - Update the `<h1 class="post-title">` with your title.
-   - Update the `<div class="post-meta">` with the date, authors, and read time.
-   - Write your content inside `<article class="post-content">`. Use standard HTML tags (`<p>`, `<h2>`, `<code>`, `<pre>`, `<blockquote>`, etc.).
-   - For code blocks with **syntax highlighting**, see [Code Blocks with Syntax Highlighting](#code-blocks-with-syntax-highlighting) below.
-3. **Add to the blog listing:** Open `blog.html` and add a new `<div class="blog-item reveal">` entry inside the `<div class="blog-list">` section:
+| Syntax                             | Renders as                        |
+| ---------------------------------- | --------------------------------- |
+| `## Heading`                       | `<h2>` through `<h6>`            |
+| `**bold**`                         | **bold**                          |
+| `*italic*`                         | *italic*                          |
+| `` `code` ``                       | `code`                            |
+| `[text](url)`                      | link                              |
+| `![alt](src)` (first in post)      | `<figure>` with caption           |
+| `![alt](src)` (subsequent)         | `<img>`                           |
+| ` ```lang … ``` `                  | Syntax-highlighted code block     |
+| `> quote`                          | Blockquote                        |
+| `* item` / `- item`               | Unordered list                    |
+| `1. item`                          | Ordered list                      |
+| `---`                              | Horizontal rule                   |
+| `~~strike~~`                       | ~~strikethrough~~                 |
+| `| table |`                        | Table (with alignment)            |
+| Raw HTML                           | Passed through unchanged          |
+
+See `blog/post-template.md` for a full working example.
+
+#### 3. Run the converter
+
+```bash
+python3 scripts/md2post.py blog/my-post.md
+```
+
+This will:
+- Generate `blog/5.my-post.html` (auto-numbered, slug from filename)
+- Insert a date-ordered entry into `blog.html`
+- Detect code blocks and include syntax highlighting assets automatically
+
+**Options:**
+
+```bash
+# Override the post number
+python3 scripts/md2post.py blog/my-post.md --number 5
+
+# Override the slug (filename portion)
+python3 scripts/md2post.py blog/my-post.md --slug custom-slug
+
+# Preview without writing anything
+python3 scripts/md2post.py blog/my-post.md --dry-run
+
+# Vietnamese post (detected from lang: vi in front matter)
+python3 scripts/md2post.py vi/blog/my-post.md
+```
+
+> **Note:** The slug is derived from the markdown **filename**, not the title. Name your `.md` file with the slug you want (e.g. `cuda-kernels.md` → `5.cuda-kernels.html`). Use `--slug` only if you need to override this.
+
+#### 4. Commit and push
+
+```bash
+git add blog/5.my-post.html blog.html
+git commit -m "blog: Add my new post"
+git push
+```
+
+### Option B: Write HTML Manually
+
+If you prefer working directly in HTML or need more control over the markup:
+
+1. **Copy the template:** Copy `blog/post-template.html` to a new file (e.g. `blog/5.my-post.html`).
+2. **Edit the metadata:**
+   - `<title>` and `<meta name="description">` in `<head>`
+   - `<h1 class="post-title">` — the post title
+   - `<div class="post-meta">` — date, authors, read time
+3. **Write content** inside `<article class="post-content">` using standard HTML tags (`<p>`, `<h2>`, `<pre><code>`, `<blockquote>`, `<ul>`, `<ol>`, etc.).
+4. **Add to the listing** — open `blog.html` and insert a new entry inside `<div class="blog-list">`:
+
    ```html
    <div class="blog-item reveal">
-     <div class="blog-date">YYYY-MM-DD</div>
-     <h2 class="blog-title"><a href="blog/my-new-post.html">Post Title</a></h2>
+     <div class="blog-date">2026-04-01</div>
+     <h2 class="blog-title"><a href="blog/5.my-post.html">Post Title</a></h2>
      <p class="blog-excerpt">A short description of the post.</p>
    </div>
    ```
-4. **(Optional) Add to homepage:** If this is a featured post, add it to the latest section in `index.html`.
 
-### Code Blocks with Syntax Highlighting
+   Entries are ordered newest-first by date.
 
-Blog posts use [Highlight.js](https://highlightjs.org/) (loaded via CDN) for automatic syntax highlighting. This is the HTML equivalent of Markdown fenced code blocks (`` ```python ``, `` ```bash ``, etc.).
+5. **If using code blocks**, add the syntax highlighting assets. In `<head>` (before `style.css`):
 
-#### Setup (in each blog post that uses code blocks)
+   ```html
+   <link rel="stylesheet" href="/vendor/hljs/atom-one-dark.min.css">
+   ```
 
-Add the Highlight.js theme in `<head>`, **before** `style.css` (so the site's overrides win):
+   Before `</body>` (after `main.js`):
 
-```html
-<link rel="stylesheet" href="/vendor/hljs/atom-one-dark.min.css">
-<link rel="stylesheet" href="/css/style.css">
-```
+   ```html
+   <script src="/js/hljs.js" defer></script>
+   ```
 
-Add the loader script before `</body>`, after `main.js`:
+---
 
-```html
-<script src="/js/hljs.js"></script>
-```
+## Adding Other Content
 
-The theme (`atom-one-dark`) provides the standard syntax colors. The site's `css/style.css` loads after it and overrides only the code block background to match the site theme. The script (`js/hljs.js`) fetches the Highlight.js core from the CDN, loads the extra language modules (LaTeX, Dockerfile, INI), calls `hljs.highlightAll()`, and injects a **copy button** into every `<pre>` block automatically.
+### Team Members
 
-#### Copy button
-
-Every code block gets a copy-to-clipboard button (top-right corner, visible on hover). This is handled entirely by `js/hljs.js` — no extra markup needed. The button uses an inline SVG icon and briefly shows a checkmark after copying. Styling lives in `css/style.css` under `.copy-btn`.
-
-> **Note:** The default Highlight.js build covers ~40 common languages (bash, python, javascript, json, yaml, css, markdown, etc.) but does not include LaTeX, Dockerfile, or INI — those are bundled by `hljs.js`. To add more languages, edit the `queue` array in `js/hljs.js` (see the [full language list](https://highlightjs.org/download)).
-
-#### Writing code blocks
-
-Use `<pre><code class="language-xxx">` where `xxx` is the language identifier — just like `` ```xxx `` in Markdown:
-
-| Markdown equivalent | HTML                                              |
-| ------------------- | ------------------------------------------------- |
-| `` ```bash ``       | `<pre><code class="language-bash">`               |
-| `` ```python ``     | `<pre><code class="language-python">`             |
-| `` ```javascript `` | `<pre><code class="language-javascript">`         |
-| `` ```yaml ``       | `<pre><code class="language-yaml">`               |
-| `` ```json ``       | `<pre><code class="language-json">`               |
-| `` ```latex ``      | `<pre><code class="language-latex">`              |
-| `` ```dockerfile `` | `<pre><code class="language-dockerfile">`         |
-| `` ```ini ``        | `<pre><code class="language-ini">`                |
-| `` ```html ``       | `<pre><code class="language-html">`               |
-| `` ```css ``        | `<pre><code class="language-css">`                |
-| `` ```markdown ``   | `<pre><code class="language-markdown">`           |
-| `` ```plaintext ``  | `<pre><code class="language-plaintext">`          |
-
-**Example:**
-
-```html
-<pre><code class="language-python"># This will be syntax-highlighted as Python
-def hello(name: str) -> str:
-    """Greet someone."""
-    return f"Hello, {name}!"</code></pre>
-```
-
-> **Tip:** Use `language-plaintext` for code blocks that shouldn't be highlighted (e.g. ASCII diagrams, generic command output). If you omit the class entirely, Highlight.js will auto-detect the language, which may produce unexpected results.
-
-For a full list of supported languages, see the [Highlight.js supported languages page](https://highlightjs.org/download#702-languages-and-styles).
-
-### Add a Team Member
-
-Open `team.html` and add a new `<div class="member reveal">` block inside the `<div class="team-grid">` section:
+Open `team.html` and add a `<div class="member reveal">` block inside `<div class="team-grid">`:
 
 ```html
 <div class="member reveal">
@@ -332,9 +416,9 @@ Open `team.html` and add a new `<div class="member reveal">` block inside the `<
 </div>
 ```
 
-### Add a Project
+### Projects
 
-Open `projects.html` and add a new `<div class="card reveal">` block inside the appropriate `<div class="card-grid cols-2">` section (active or completed):
+Open `projects.html` and add a `<div class="card reveal">` block inside the appropriate `<div class="card-grid cols-2">` section (active or completed):
 
 ```html
 <div class="card reveal">
@@ -349,9 +433,9 @@ Open `projects.html` and add a new `<div class="card reveal">` block inside the 
 </div>
 ```
 
-### Add a Research Paper
+### Research Papers
 
-Open `research.html` and add a new `<div class="paper reveal">` block inside the appropriate year's `<div class="research-list">` section. To add a new year, create a new `<div class="research-year">` above a new `<div class="research-list">`:
+Open `research.html` and add a `<div class="paper reveal">` block inside the appropriate year's `<div class="research-list">`:
 
 ```html
 <div class="paper reveal">
@@ -366,9 +450,15 @@ Open `research.html` and add a new `<div class="paper reveal">` block inside the
 </div>
 ```
 
-### Add Images
+To add a new year, create a new `<div class="research-year">` above a new `<div class="research-list">`.
 
-Place image files in the `/img/` folder. Images inside `<article class="post-content">` are automatically styled (full-width, bordered). Use root-relative paths so they work at any directory depth:
+---
+
+## Media
+
+### Images
+
+Place files in `/img/`. Images inside `<article class="post-content">` are automatically styled (full-width, bordered). Always use root-relative paths:
 
 ```html
 <!-- Basic image -->
@@ -377,95 +467,152 @@ Place image files in the `/img/` folder. Images inside `<article class="post-con
 <!-- Image with caption -->
 <figure>
   <img src="/img/results-chart.png" alt="Benchmark results">
-  <figcaption>Figure 1: Inference latency comparison across sequence lengths.</figcaption>
+  <figcaption>Figure 1: Inference latency comparison.</figcaption>
 </figure>
 ```
 
-Supported formats: `.png`, `.jpg`, `.webp`, `.svg`, `.gif`. Keep images optimized for web (aim for < 500 KB per image).
+In Markdown posts, use `![alt text](/img/my-image.jpg)`. The first image becomes a `<figure>` with a caption automatically.
 
-### Add Videos
-
-Embed videos directly or host them externally:
+### Videos
 
 ```html
-<!-- Self-hosted video -->
+<!-- Self-hosted -->
 <video controls width="100%">
   <source src="../assets/demo.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
-<!-- YouTube embed -->
+<!-- YouTube -->
 <iframe width="100%" height="400" src="https://www.youtube.com/embed/VIDEO_ID"
   frameborder="0" allowfullscreen></iframe>
 
-<!-- Vimeo embed -->
+<!-- Vimeo -->
 <iframe width="100%" height="400" src="https://player.vimeo.com/video/VIDEO_ID"
   frameborder="0" allowfullscreen></iframe>
 ```
 
-For large video files, prefer hosting on YouTube/Vimeo and embedding via `<iframe>` rather than committing them to the repo.
+Prefer YouTube/Vimeo embeds over committing large video files to the repo.
 
-### Add Audio
+### Audio
 
 ```html
-<!-- Audio player -->
 <audio controls>
   <source src="../assets/podcast-episode.mp3" type="audio/mpeg">
   Your browser does not support the audio element.
 </audio>
 ```
 
-Supported formats: `.mp3`, `.ogg`, `.wav`. For podcast-style content, consider hosting on an external platform and linking to it.
+Supported formats: `.mp3`, `.ogg`, `.wav`.
 
-### Add Other Embedded Content
+### Other Embeds
 
 ```html
-<!-- PDF embed -->
+<!-- PDF -->
 <embed src="../assets/paper-draft.pdf" type="application/pdf" width="100%" height="600px">
 
-<!-- Interactive demo (CodePen, Observable, etc.) -->
+<!-- CodePen / Observable -->
 <iframe src="https://codepen.io/user/embed/pen-id" width="100%" height="400"
   frameborder="0" allowfullscreen></iframe>
 
-<!-- Slides (Google Slides, Speaker Deck, etc.) -->
+<!-- Google Slides -->
 <iframe src="https://docs.google.com/presentation/d/SLIDE_ID/embed"
   width="100%" height="400" frameborder="0" allowfullscreen></iframe>
 ```
 
 ### Media Guidelines
 
-- **File organization:** Store media files in the `/img/` folder at the root.
-- **File size:** Keep the repo lean. Avoid committing files larger than 10 MB. Use external hosting (YouTube, Vimeo, cloud storage) for large media.
-- **Alt text:** Always include descriptive `alt` attributes on `<img>` tags for accessibility.
-- **Responsive:** Images and videos use `max-width: 100%` by default and scale to fit their container.
-- **Path style:** Use **Root-Relative Paths** (starting with `/`) for all assets so they load correctly from any subfolder (e.g. `/img/logo.png`).
+| Guideline         | Details                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| **File location** | Store all media in `/img/` at the root                                               |
+| **File size**     | Keep under 10 MB. Use external hosting for large files                               |
+| **Alt text**      | Always include descriptive `alt` attributes for accessibility                        |
+| **Responsive**    | Images and videos use `max-width: 100%` automatically                                |
+| **Paths**         | Use root-relative paths starting with `/` (e.g. `/img/logo.png`)                    |
+| **Formats**       | Images: `.png`, `.jpg`, `.webp`, `.svg`, `.gif` — keep optimized for web (< 500 KB) |
+
+---
+
+## Code Blocks & Syntax Highlighting
+
+Blog posts use [Highlight.js](https://highlightjs.org/) for automatic syntax highlighting. The script `js/hljs.js` handles loading, highlighting, and injecting a **copy-to-clipboard button** into every code block.
+
+> **If you use the Markdown converter (`md2post.py`), all of this is handled automatically.** The sections below are for manual HTML authors.
+
+### Setup
+
+In `<head>`, **before** `style.css`:
+
+```html
+<link rel="stylesheet" href="/vendor/hljs/atom-one-dark.min.css">
+<link rel="stylesheet" href="/css/style.css">
+```
+
+Before `</body>`, **after** `main.js`:
+
+```html
+<script src="/js/main.js" defer></script>
+<script src="/js/hljs.js" defer></script>
+```
+
+### Writing Code Blocks
+
+Use `<pre><code class="language-xxx">` where `xxx` is the language — equivalent to ` ```xxx ` in Markdown:
+
+| Markdown            | HTML                                      |
+| ------------------- | ----------------------------------------- |
+| ` ```bash `         | `<pre><code class="language-bash">`       |
+| ` ```python `       | `<pre><code class="language-python">`     |
+| ` ```javascript `   | `<pre><code class="language-javascript">` |
+| ` ```yaml `         | `<pre><code class="language-yaml">`       |
+| ` ```dockerfile `   | `<pre><code class="language-dockerfile">` |
+| ` ```latex `        | `<pre><code class="language-latex">`      |
+| ` ```ini `          | `<pre><code class="language-ini">`        |
+| ` ```plaintext `    | `<pre><code class="language-plaintext">`  |
+
+Example:
+
+```html
+<pre><code class="language-python"># This will be syntax-highlighted as Python
+def hello(name: str) -> str:
+    return f"Hello, {name}!"</code></pre>
+```
+
+> **Tip:** Use `language-plaintext` for code blocks that shouldn't be highlighted (ASCII diagrams, command output). Omitting the class entirely causes Highlight.js to auto-detect, which may produce unexpected results.
+
+### Copy Button
+
+Every `<pre>` block automatically gets a copy-to-clipboard button (top-right corner). No extra markup needed. This is handled entirely by `js/hljs.js`, with styling in `css/style.css` under `.copy-btn`.
+
+### Adding Languages
+
+The default Highlight.js build covers ~40 common languages. Extra languages (LaTeX, Dockerfile, INI) are bundled in `js/hljs.js`. To add more, edit the `LANGUAGES` array in that file. See the [full language list](https://highlightjs.org/download).
+
+---
 
 ## Localization (l10n)
 
-The site supports multiple languages. English (`en`) is the default; translated pages live under a language prefix directory (e.g. `vi/` for Vietnamese). A language switcher with SVG flags appears in the navigation bar on every page.
+The site supports multiple languages. English is the default; translations live under a language prefix (e.g. `vi/` for Vietnamese). A language switcher appears in the navigation bar.
 
 ### How It Works
 
-| Concept | Details |
-| --- | --- |
-| **Default language** | English — pages at the root (`blog/4.introduction.html`) |
-| **Translated pages** | Mirrored under a language prefix (`vi/blog/4.introduction.html`) |
-| **Manifest** | `l10n/manifest.json` — maps each base path to its available languages |
-| **Switcher JS** | `js/l10n.js` — reads the manifest, builds a dropdown with flag buttons, handles auto-detection |
-| **Auto-detection** | On first visit the browser's `navigator.language` is checked. If a translation exists for that language, the user is redirected automatically. The choice is stored in `localStorage` (`ftu-lang`). |
-| **Greyed-out languages** | If the current page has no translation for a language, that option is visually disabled (`opacity: 0.3`, `pointer-events: none`). |
+| Concept                  | Details                                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------ |
+| **Default language**     | English — pages at the root (`blog/4.introduction.html`)                                               |
+| **Translated pages**     | Mirrored under a prefix (`vi/blog/4.introduction.html`)                                                |
+| **Manifest**             | `l10n/manifest.json` — maps each base path to available language codes                                 |
+| **Switcher JS**          | `js/l10n.js` — reads the manifest, builds a dropdown with flags                                       |
+| **Auto-detection**       | First visit checks `navigator.language`. If a translation exists, the user is redirected. Stored in `localStorage` (`ftu-lang`). |
+| **Greyed-out languages** | If the current page has no translation for a language, that flag is disabled                            |
 
 ### Translate an Existing Page
 
-1. **Create a branch** following the naming convention:
+1. **Create a branch:**
 
    ```bash
    git checkout -b l10n/vi/blog/4.introduction
    ```
 
-   The branch name is `l10n/[lang]/[path]` — the language code followed by the page path (without `.html`).
-
-2. **Copy the English page** into the language directory, mirroring the path:
+2. **Copy the English page:**
 
    ```bash
    mkdir -p vi/blog
@@ -473,24 +620,24 @@ The site supports multiple languages. English (`en`) is the default; translated 
    ```
 
 3. **Edit the translated file:**
-   - Change `<html lang="en">` to `<html lang="vi">` (or the appropriate BCP-47 tag).
-   - **Use Root-Relative Paths for Engine Assets** — All JS, CSS, Vendor, and Img assets MUST start with a `/`. These do **not** change when you move files to a subfolder:
+   - Change `<html lang="en">` to `<html lang="vi">`
+   - **Keep root-relative paths** for assets — they don't change:
      ```html
      <link rel="stylesheet" href="/css/style.css">
      <script src="/js/main.js"></script>
      <img src="/img/logo.png">
      ```
-   - **Maintain Folder-Aware Navigation for Content** — Page-to-page links (like "Home" or "Blog") should remain **relative** so the user stays within the same language directory:
+   - **Keep relative paths** for page navigation so the user stays in the same language:
      ```html
-     <!-- In vi/blog/4.html, this stays in Vietnamese -->
-     <a href="../index.html">Home</a> 
-     
-     <!-- This would jump back to English root — avoid! -->
-     <a href="/index.html">Home</a> 
+     <!-- ✅ Stays in Vietnamese -->
+     <a href="../index.html">Trang chủ</a>
+
+     <!-- ❌ Jumps to English — avoid! -->
+     <a href="/index.html">Trang chủ</a>
      ```
-   - Translate all user-facing text (title, headings, paragraphs, lists, blockquotes).
-   - **Do NOT translate** code blocks, terminal commands, URLs, or technical terms commonly used in English (e.g. Git, commit, branch, IDE, CUDA).
-   - Keep the same HTML structure — same classes, IDs, and nesting.
+   - Translate all user-facing text (title, headings, paragraphs, etc.)
+   - **Do NOT translate** code blocks, terminal commands, URLs, or common English technical terms (Git, IDE, CUDA, etc.)
+   - Keep the same HTML structure (classes, IDs, nesting)
 
 4. **Register the translation** in `l10n/manifest.json`:
 
@@ -501,44 +648,97 @@ The site supports multiple languages. English (`en`) is the default; translated 
    }
    ```
 
-   The key is the **base path** (English URL without a leading `/`). The value is an array of available language codes.
-
-5. **Commit, push, and open a PR** as usual:
+5. **Commit and open a PR:**
 
    ```bash
    git add vi/blog/4.introduction.html l10n/manifest.json
-   git commit -m "l10n: Add Vietnamese translation for blog/4.introduction"
+   git commit -m "l10n(vi): Translate blog/4.introduction"
    git push origin l10n/vi/blog/4.introduction
-   gh pr create --title "l10n: Vietnamese translation of Survival Guide"
    ```
 
 ### Add a New Language
 
-To add a new language (e.g. Japanese `ja`):
+1. Register the language in `js/l10n.js` — add an entry to the `LANGUAGES` array with `code`, `label`, and `flag` SVG.
+2. Create the directory structure (`ja/`, `ja/blog/`, etc.).
+3. Translate pages and update `l10n/manifest.json`.
 
-1. Register the language in `js/l10n.js`:
-   - Add an entry to the `LANGUAGES` array with `code`, `label`, and `flag` SVG.
+---
 
-2. Create the directory structure: `ja/blog/`, `ja/` etc.
+## Tooling & Automation
 
-3. Translate pages and update `l10n/manifest.json` as described above.
+### Markdown-to-Post Converter
 
-### Currently Translated Pages
+**`scripts/md2post.py`** — Converts a Markdown file into a fully-formed blog post HTML page and updates the blog listing.
 
-| Page | Languages |
-| --- | --- |
-| `blog/4.introduction.html` | English, Vietnamese |
-| `blog/post-template.html` | English, Vietnamese |
+```bash
+python3 scripts/md2post.py blog/my-post.md
+```
 
-All other pages show the language switcher but Vietnamese is greyed out (disabled) until a translation is added.
+What it does:
 
-## Theme
+1. Parses the front matter for metadata (title, date, authors, etc.)
+2. Converts Markdown body → HTML matching the site's template
+3. Writes `blog/{N}.{slug}.html` (auto-numbered, slug from filename)
+4. Inserts a date-ordered entry into `blog.html` (or `vi/blog.html` for `lang: vi`)
+5. Includes hljs assets only when code blocks are present
 
-The site uses a dark terminal-style design with **red** as the accent color. All theme colors are defined as CSS custom properties in `css/style.css` under the `:root` selector. To change the accent color, update the `--accent`, `--accent-hover`, `--accent-bg`, and `--accent-border` variables.
+Options:
+
+| Flag              | Description                              |
+| ----------------- | ---------------------------------------- |
+| `--number N`, `-n`| Override the auto-assigned post number   |
+| `--slug NAME`, `-s`| Override the slug (default: filename)   |
+| `--dry-run`       | Preview what would happen without writing files |
+
+**Requirements:** Python 3.6+ (standard library only — no pip install needed).
+
+### Cache Busting
+
+When CSS or JS files are updated, returning visitors may see stale cached versions. The site uses **per-file content hashes** appended as query strings (e.g. `style.css?v=a141b4e6`) to bust caches without affecting load time.
+
+**This is fully automated.** On every push to `main`, the GitHub Actions workflow (`.github/workflows/cachebust.yml`) runs `cachebust.sh`, which:
+
+1. Finds all local CSS/JS references across every HTML file
+2. Computes a content hash for each asset using `git hash-object`
+3. Stamps (or re-stamps) the `?v=` query string
+4. Commits the changes back if anything changed
+
+**You don't need to do anything.** Just write plain references like `<link rel="stylesheet" href="/css/style.css">` or `<script src="/js/main.js">` and the CI handles the rest.
+
+To run it manually (optional):
+
+```bash
+./cachebust.sh
+```
+
+The script is idempotent — running it twice without changing assets produces zero diff. It uses `git hash-object` instead of `md5sum` for cross-platform compatibility (Linux, macOS, Windows Git Bash).
+
+### Vendor Library Updates
+
+**`.github/workflows/update-vendor-libs.yml`** — Runs weekly (Wednesday 9:00 AM GMT+7) and opens a PR if any vendor libraries (Highlight.js, etc.) have newer versions. Can also be triggered manually via `workflow_dispatch`.
+
+---
+
+## Theme & Customization
+
+The site uses a dark terminal-style design with **red** as the accent color. All theme colors are CSS custom properties in `css/style.css` under `:root`:
+
+```css
+:root {
+  --accent: …;
+  --accent-hover: …;
+  --accent-bg: …;
+  --accent-border: …;
+}
+```
+
+To change the accent color, update these four variables.
+
+---
 
 ## Development
 
-No build tools required. Open any `.html` file in a browser to preview, or use a local server:
+No build tools required. Open any `.html` file in a browser, or use a local server for root-relative paths to work:
 
 ```bash
 # Python
@@ -548,6 +748,8 @@ python3 -m http.server 8000
 npx serve .
 ```
 
+---
+
 ## Deployment
 
-Push to `main` branch. GitHub Pages will automatically deploy the site.
+Push to `main`. GitHub Pages deploys automatically. The cache-busting workflow runs after each push to ensure fresh assets for all visitors.
