@@ -1,4 +1,4 @@
-var CACHE_NAME = "ftu-labs-v1";
+var CACHE_NAME = "ftu-labs-v2";
 
 var PRECACHE = [
   "/vendor/hljs/highlight.min.js",
