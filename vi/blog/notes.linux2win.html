@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="vi">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Khởi động lại vào Windows &mdash; FTU Labs</title>
+        <link rel="icon" href="/img/logo.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="/css/style.css?v=f88ee9e0" />
+    </head>
+    <body>
+        <nav class="nav">
+            <div class="nav-inner">
+                <a href="../index.html" class="nav-logo"
+                    ><img src="/img/logo.png" alt="FTU" />FTU Labs</a
+                >
+                <div class="nav-actions">
+                    <div class="nav-links">
+                        <a href="../projects.html">dự án</a>
+                        <a href="../team.html">đội ngũ</a>
+                        <a href="../research.html">nghiên cứu</a>
+                        <a href="../blog.html">blog</a>
+                    </div>
+                    <div class="lang-switch" aria-label="Ngôn ngữ"></div>
+                    <button class="theme-toggle" aria-label="Đổi giao diện">
+                        <svg class="icon-moon" viewBox="0 0 24 24">
+                            <path
+                                d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+                            />
+                        </svg>
+                        <svg class="icon-sun" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="5" />
+                            <line x1="12" y1="1" x2="12" y2="3" />
+                            <line x1="12" y1="21" x2="12" y2="23" />
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                            <line x1="1" y1="12" x2="3" y2="12" />
+                            <line x1="21" y1="12" x2="23" y2="12" />
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                        </svg>
+                    </button>
+                    <button class="nav-toggle" aria-label="Mở menu">
+                        <span></span><span></span><span></span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div class="nav-mobile">
+            <a href="../projects.html">dự án</a>
+            <a href="../team.html">đội ngũ</a>
+            <a href="../research.html">nghiên cứu</a>
+            <a href="../blog.html">blog</a>
+        </div>
+
+        <main class="page">
+            <div class="container" style="max-width: 720px;">
+                <div
+                    class="animate animate-d1"
+                    style="display: flex; align-items: center; justify-content: center; gap: 2rem; margin-top: 3rem;"
+                >
+                    <img
+                        src="https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg"
+                        alt="Tux (Linux)"
+                        style="height: 96px; width: auto;"
+                    />
+                    <span style="font-size: 2.5rem; opacity: 0.7;" aria-hidden="true">&rarr;</span>
+                    <img
+                        src="https://commons.wikimedia.org/wiki/Special:FilePath/Windows_logo_-_2021.svg"
+                        alt="Windows"
+                        style="height: 96px; width: auto;"
+                    />
+                </div>
+
+                <figure class="animate animate-d2" style="margin: 2rem 0;">
+                    <img
+                        src="/img/notes.linux2win.png"
+                        alt="Màn hình đăng nhập TTY của Linux với mã QR bên trái và tổ hợp phím bên phải."
+                        style="width: 100%; image-rendering: pixelated; border: 1px solid #333;"
+                    />
+                </figure>
+
+                <p class="animate animate-d3" lang="en" style="font-size: 1.15rem; margin-bottom: 0.25rem;">
+                    To reboot back to Windows, press:
+                </p>
+                <p class="animate animate-d3" style="font-size: 1.15rem; margin-top: 0;">
+                    Để khởi động lại vào Windows, bấm:
+                </p>
+                <p class="animate animate-d3" style="font-size: 1.5rem; text-align: center; margin-top: 1.25rem;">
+                    <strong>Ctrl + Alt (+ Fn) + F3</strong>
+                </p>
+            </div>
+        </main>
+
+        <script src="/js/main.js?v=1b3fe2f3" defer></script>
+        <script src="/js/l10n.js?v=ce43f0c1"></script>
+    </body>
+</html>

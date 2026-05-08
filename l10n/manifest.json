@@ -9,5 +9,6 @@
   "blog/2.lms.html": ["en", "vi"],
   "blog/3.swarm.html": ["en", "vi"],
   "blog/4.introduction.html": ["en", "vi"],
+  "blog/notes.linux2win.html": ["en", "vi"],
   "blog/post-template.html": ["en", "vi"]
 }
