@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building a V100 SXM2 GPU Cluster on a University Budget — FTU Labs</title>
+    <meta name="description" content="How we built a 4×V100 SXM2 NVLink GPU node for LLM inference — from sourcing datacenter GPUs to wiring a 2000W PSU on a bare baseboard.">
+    <link rel="icon" href="/img/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/hljs/atom-one-dark.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="../index.html" class="nav-logo"><img src="/img/logo.png" alt="FTU">FTU Labs</a>
+            <div class="nav-actions">
+                <div class="nav-links">
+                    <a href="../projects.html">projects</a>
+                    <a href="../team.html">team</a>
+                    <a href="../research.html">research</a>
+                    <a href="../blog.html">blog</a>
+                    <a href="../hall.html">hall of fame</a>
+                </div>
+                <div class="lang-switch" aria-label="Language"></div>
+                <button class="theme-toggle" aria-label="Toggle theme">
+                    <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
+                <button class="nav-toggle" aria-label="Toggle menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div class="nav-mobile">
+        <a href="../projects.html">projects</a>
+        <a href="../team.html">team</a>
+        <a href="../research.html">research</a>
+        <a href="../blog.html">blog</a>
+        <a href="../hall.html">hall of fame</a>
+    </div>
+
+    <main class="page">
+        <div class="container">
+            <a href="../blog.html" class="post-back animate">&larr; back to blog</a>
+
+            <header class="post-header animate animate-d1">
+                <h1 class="post-title">Building a V100 SXM2 GPU Cluster on a University Budget</h1>
+                <div class="post-meta">2026-06-11 &middot; FTU Labs &middot; 10 min read</div>
+            </header>
+
+            <article class="post-content animate animate-d2">
+
+                <figure>
+                    <img src="/img/5.ftu-cluster/ac60f9f85739d6678f28.jpg" alt="The FTU Labs team assembling the V100 SXM2 baseboard">
+                    <figcaption>The team gathered around the baseboard for the first power-on test.</figcaption>
+                </figure>
+
+                <p>
+                    Our <a href="3.swarm.html">40-node Docker Swarm cluster</a> runs LLM inference on 88 commodity laptops &mdash;
+                    great for serving small models (4B&ndash;8B) at scale, but fundamentally limited by integrated GPUs and 16 GB of RAM per node.
+                    When we started working with 28B&ndash;35B parameter models, we needed real GPU compute.
+                    This post covers the hardware side of building our first dedicated GPU node:
+                    why we picked each component, how we put it together, and what the numbers look like.
+                </p>
+
+                <p>
+                    Part 2 will cover the system design &mdash; Docker integration, model serving stack, and how this node fits into the existing Swarm.
+                </p>
+
+                <h2>Why V100 SXM2</h2>
+
+                <p>
+                    The V100 was NVIDIA's flagship datacenter GPU from 2017&ndash;2020.
+                    In 2026 it's two generations behind (Ampere, Hopper have since shipped), which is exactly why it makes sense for us.
+                    Used V100-SXM2-16GB modules go for a fraction of what even a single consumer RTX 4090 costs,
+                    yet they offer something no consumer card does: <strong>NVLink</strong>.
+                </p>
+
+                <p>The V100 comes in two form factors, and the difference matters:</p>
+
+                <ul>
+                    <li>
+                        <strong>V100 PCIe</strong> &mdash; standard PCIe x16 card. Plugs into any server motherboard.
+                        Limited to PCIe 3.0 bandwidth (~15.75 GB/s per direction) for GPU-to-GPU communication.
+                    </li>
+                    <li>
+                        <strong>V100 SXM2</strong> &mdash; mezzanine module that sits directly on a baseboard.
+                        Connected via <strong>NVLink NV2</strong>: 6 links per GPU, ~300 GB/s aggregate bisection bandwidth.
+                        That's roughly 10&times; the bandwidth of PCIe.
+                    </li>
+                </ul>
+
+                <p>
+                    We went with SXM2 because our workload &mdash; serving a 28B-parameter model across 4 GPUs &mdash;
+                    needs the GPUs to exchange KV cache and activation data constantly.
+                    With PCIe, inter-GPU communication becomes the bottleneck.
+                    With NVLink, the 4 GPUs behave more like a single 64 GB device.
+                </p>
+
+                <p>Our 4&times;V100 SXM2 node provides:</p>
+
+                <ul>
+                    <li>64 GB total HBM2 VRAM (4 &times; 16 GB)</li>
+                    <li>NVLink NV2 full-mesh topology &mdash; every GPU pair has ~51.5 GB/s bidirectional bandwidth</li>
+                    <li>Volta architecture (sm_70), 5120 CUDA cores per GPU</li>
+                    <li>640 Tensor Cores per GPU (FP16/FP32 mixed-precision)</li>
+                </ul>
+
+                <p>
+                    The main trade-off: Volta (sm_70) does <strong>not</strong> support Flash Attention 2, which requires Ampere (sm_80) or newer.
+                    This rules out some software stacks but is not a dealbreaker &mdash; llama.cpp and vLLM both have
+                    alternative attention backends that work on sm_70.
+                </p>
+
+                <h2>The Baseboard</h2>
+
+                <img src="/img/5.ftu-cluster/a42fc6b06871e92fb060.jpg" alt="Close-up of the SXM2 baseboard with copper heatsinks and EVGA 2000W PSU">
+
+                <p>
+                    SXM2 GPUs don't plug into standard motherboard slots.
+                    They mount on a purpose-built <strong>baseboard</strong> &mdash; a custom PCB that provides NVLink traces,
+                    power delivery, and the mezzanine connectors.
+                    The baseboard we sourced is an 8-GPU design (we populated 4 of the 8 slots), which gives us room to scale later.
+                </p>
+
+                <p>
+                    The baseboard connects to the host system via a PLX PCIe switch,
+                    which bridges the SXM2 modules to a standard PCIe x16 slot on the host motherboard.
+                    From the OS perspective, you see 4 CUDA devices on a single PCIe root &mdash;
+                    but the real inter-GPU traffic flows over NVLink, not PCIe.
+                </p>
+
+                <p>
+                    Each GPU module comes with a copper heatsink pre-mounted.
+                    These are passive heatsinks &mdash; no fans, no vapor chamber, just solid copper fin stacks.
+                    In a datacenter chassis (like the DGX-1) they rely on high-velocity airflow from chassis fans.
+                    On our open bench, we added 120mm blower fans at each end of the board for directed airflow.
+                    Under sustained load, GPU temps sit around 75&ndash;80&deg;C &mdash; well within the 83&deg;C throttle threshold.
+                </p>
+
+                <h2>Why EVGA 2000W</h2>
+
+                <p>
+                    Each V100 SXM2 module draws up to <strong>300W TDP</strong>.
+                    Four GPUs alone can pull 1200W at peak.
+                    Add the host system (CPU, RAM, NVMe, fans) and you're looking at ~1400W total.
+                    We needed a PSU with enough headroom to handle sustained loads without tripping protections.
+                </p>
+
+                <p>
+                    The <strong>EVGA SuperNOVA 2000 G+</strong> was the choice for several reasons:
+                </p>
+
+                <ul>
+                    <li>
+                        <strong>2000W continuous</strong> on a single unit &mdash; no need to synchronize dual PSUs.
+                        Dual-PSU setups are common in server builds but introduce complexity
+                        (you need a splitter board or jumper to sync the start signals, and if one PSU trips, the other keeps running,
+                        which can damage components).
+                    </li>
+                    <li>
+                        <strong>80+ Gold efficiency</strong> &mdash; at 50% load (our typical operating point of ~1000W),
+                        it runs at ~92% efficiency, meaning ~80W wasted as heat from the PSU itself.
+                    </li>
+                    <li>
+                        <strong>Enough PCIe power connectors</strong> &mdash; the baseboard needs multiple 8-pin (6+2) EPS/PCIe power inputs.
+                        The EVGA 2000 G+ ships with enough cables to supply them all natively, without splitters or adapters.
+                    </li>
+                    <li>
+                        <strong>Single 220V input</strong> &mdash; Vietnam's grid runs at 220V/50Hz, so 2000W is achievable on a standard 15A outlet.
+                        On US 120V circuits, you'd need a 20A dedicated circuit or a 240V outlet for this wattage.
+                    </li>
+                </ul>
+
+                <h2>Host System</h2>
+
+                <p>
+                    The GPU baseboard needs a host system for the CPU, boot drive, and network connection.
+                    We kept this minimal &mdash; the host's job is to orchestrate, not compute:
+                </p>
+
+                <ul>
+                    <li><strong>CPU:</strong> Intel i7-13700 (16 cores, 24 threads) &mdash; enough to feed 4 GPUs without bottlenecking on tokenization or scheduling</li>
+                    <li><strong>RAM:</strong> 14 GB DDR4 &mdash; tight, but sufficient for our inference workload where the model lives entirely in VRAM</li>
+                    <li><strong>Storage:</strong> 476 GB NVMe (boot + models) + 175 GB secondary NTFS partition for overflow</li>
+                    <li><strong>OS:</strong> Ubuntu 26.04 LTS, CUDA 13.0, driver 580.159.03</li>
+                    <li><strong>Network:</strong> Gigabit Ethernet on the campus LAN (10.0.110.x subnet) + Tailscale VPN for remote access</li>
+                </ul>
+
+                <p>
+                    The storage situation is the weakest link.
+                    A quantized 28B model (GGUF Q4_K_M) is ~18 GB &mdash; that eats a significant chunk of a 476 GB drive.
+                    We work around this by NFS-mounting the model directory from the Swarm's leader node,
+                    so all nodes in the cluster share a single model cache.
+                </p>
+
+                <h2>The Build Process</h2>
+
+                <img src="/img/5.ftu-cluster/efb56d37c3f642a81be7.jpg" alt="Three students assembling the SXM2 baseboard with a multimeter">
+
+                <p>
+                    Assembling an SXM2 system is not like building a regular PC.
+                    There's no case, no standard standoffs, no I/O shield.
+                    The baseboard sits on a cardboard box (its shipping container) while we work on it &mdash; it's open-bench by necessity.
+                </p>
+
+                <p>The build went through a few stages:</p>
+
+                <ol>
+                    <li>
+                        <strong>Inspecting the baseboard</strong> &mdash; we received the board with 4 V100 modules pre-seated.
+                        First step was checking each module's seating and verifying the NVLink connector alignment.
+                        A multimeter helped us verify power rail continuity before connecting the PSU.
+                    </li>
+                    <li>
+                        <strong>Wiring the PSU</strong> &mdash; the baseboard uses a combination of 8-pin EPS connectors for GPU power
+                        and a 24-pin ATX connector for board logic.
+                        Each GPU pair needs its own dedicated power cable &mdash; daisy-chaining is a fire hazard at 300W per module.
+                    </li>
+                    <li>
+                        <strong>Connecting to the host</strong> &mdash; a PCIe x16 riser cable bridges the baseboard's PLX switch to the host motherboard.
+                        Keep it short &mdash; long risers introduce signal integrity issues.
+                    </li>
+                    <li>
+                        <strong>First power-on</strong> &mdash; the whole team gathered for this one.
+                        We connected a monitor and keyboard, hit the power button, and watched <code>nvidia-smi</code> enumerate 4 GPUs.
+                        Seeing all 4 V100s recognized with NVLink active was the moment the project felt real.
+                    </li>
+                    <li>
+                        <strong>Thermal management</strong> &mdash; without a server chassis, we attached 120mm blower fans
+                        with zip ties and tested under sustained GPU burn-in.
+                        The copper heatsinks do their job if you provide even modest airflow.
+                    </li>
+                </ol>
+
+                <img src="/img/5.ftu-cluster/76c65050fe917fcf2680.jpg" alt="Top-down view of the fully wired V100 SXM2 baseboard with blower fans">
+
+                <h2>Initial Benchmarks</h2>
+
+                <p>
+                    With the hardware assembled, we ran our first inference benchmarks using llama.cpp
+                    with our REAP-28B model (a pruned 28B-parameter Qwen variant quantized to Q4_K_M, ~18 GB GGUF).
+                </p>
+
+                <p>
+                    A key constraint: mainline llama.cpp's draft-model speculative decoding loads the model <em>twice</em>
+                    (once as target, once as draft), which OOMs on 2&times;16 GB.
+                    With 4&times;V100 (64 GB total) and the shared-model memory mapping from the AtomicChat fork,
+                    the model loads once and all 4 GPUs share the mapped memory.
+                </p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Hardware</th>
+                            <th>No Speculative</th>
+                            <th>+MTP (draft d=2)</th>
+                            <th>Acceptance Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>V100 4&times;SXM2</strong></td>
+                            <td>78 t/s</td>
+                            <td>61 t/s</td>
+                            <td>15%</td>
+                        </tr>
+                        <tr>
+                            <td>H100 (1&times;)</td>
+                            <td>141 t/s</td>
+                            <td>157 t/s</td>
+                            <td>63.6%</td>
+                        </tr>
+                        <tr>
+                            <td>Xavier AGX</td>
+                            <td>18.9 t/s</td>
+                            <td>10&ndash;12 t/s</td>
+                            <td>15%</td>
+                        </tr>
+                        <tr>
+                            <td>i7-13700 (CPU only)</td>
+                            <td>25.5 t/s</td>
+                            <td>38.2 t/s</td>
+                            <td>~49%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    The V100 node hits <strong>78 tokens/second</strong> on single-stream generation &mdash;
+                    roughly 4&times; faster than CPU inference and 4&times; faster than the Xavier AGX.
+                    For context, that's fast enough for real-time conversational AI
+                    (human reading speed is ~4 tokens/second).
+                </p>
+
+                <p>
+                    An interesting finding: <strong>speculative decoding (MTP) is net-negative on Volta</strong>.
+                    The V100 is compute-bound, not memory-bandwidth-bound, so the overhead of draft-then-verify
+                    exceeds the savings from parallel token generation.
+                    MTP only breaks even at ~60% acceptance rate &mdash;
+                    our V100 achieves 15%, far below the threshold.
+                    On the H100 with our improved KD-MEGA MTP head (63.6% acceptance), speculative decoding does deliver a +12% speedup.
+                </p>
+
+                <h2>Cluster-wide Context</h2>
+
+                <p>
+                    To put this node in perspective against the rest of our infrastructure:
+                </p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tier</th>
+                            <th>Hardware</th>
+                            <th>Nodes</th>
+                            <th>Model</th>
+                            <th>Per-Node Speed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Swarm</td>
+                            <td>i7-13700H laptops</td>
+                            <td>40</td>
+                            <td>Qwen 4B Q4_K_M</td>
+                            <td>~8&ndash;10 t/s</td>
+                        </tr>
+                        <tr>
+                            <td>Edge</td>
+                            <td>Jetson Xavier AGX</td>
+                            <td>1</td>
+                            <td>REAP-28B Q2_K</td>
+                            <td>~15&ndash;19 t/s</td>
+                        </tr>
+                        <tr>
+                            <td><strong>GPU</strong></td>
+                            <td><strong>4&times;V100 SXM2</strong></td>
+                            <td><strong>1</strong></td>
+                            <td><strong>REAP-28B Q4_K_M</strong></td>
+                            <td><strong>~78 t/s</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    The Swarm handles volume (40 nodes, ~396 t/s aggregate at 80 concurrent users) with small models.
+                    The V100 node handles quality &mdash; a single node running a 28B model at conversational speed.
+                    The semantic router in front of the cluster directs simple queries to the Swarm
+                    and complex reasoning tasks to the V100 node.
+                </p>
+
+                <h2>Lessons and What's Next</h2>
+
+                <p>A few things we learned building this:</p>
+
+                <ul>
+                    <li>
+                        <strong>SXM2 boards are not plug-and-play.</strong>
+                        Unlike PCIe GPUs, there's no standard ecosystem of cases, cables, and cooling.
+                        You're essentially building custom hardware.
+                        Budget time for debugging power delivery and thermals.
+                    </li>
+                    <li>
+                        <strong>NVLink matters more than clock speed</strong> for multi-GPU inference.
+                        The bandwidth between GPUs determines how fast you can serve models that don't fit in a single GPU's VRAM.
+                        PCIe would cut our effective throughput significantly.
+                    </li>
+                    <li>
+                        <strong>Don't skimp on the PSU.</strong>
+                        At 1200W+ GPU load, a marginal PSU will trip under sustained inference.
+                        Get a unit rated for continuous (not peak) delivery at your target wattage.
+                        The EVGA 2000W has been rock-solid through multi-day burn-in runs.
+                    </li>
+                    <li>
+                        <strong>sm_70 is still capable</strong> &mdash;
+                        it can't run Flash Attention 2, but alternative attention backends (standard SDPA, custom V100-optimized kernels)
+                        get within 80% of FA2 performance for inference workloads.
+                    </li>
+                    <li>
+                        <strong>Speculative decoding isn't universal.</strong>
+                        Test on your actual hardware before committing to an MTP-based serving strategy.
+                        Compute-bound GPUs (V100, Xavier) don't benefit; bandwidth-bound GPUs (H100) do.
+                    </li>
+                </ul>
+
+                <p>
+                    In the next post, we'll cover the software stack: how we integrated this node into the Docker Swarm,
+                    the vLLM serving configuration with the custom V100 Flash Attention backend,
+                    NFS model sharing, and the semantic routing layer that dispatches requests between CPU and GPU tiers.
+                </p>
+
+            </article>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <span class="footer-copy">&copy; 2026 FTU Labs</span>
+            <div class="footer-links">
+                <a href="https://github.com/ftulabs">GitHub</a>
+                <a href="https://twitter.com/ftulabs">Twitter</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/l10n.js"></script>
+</body>
+</html>

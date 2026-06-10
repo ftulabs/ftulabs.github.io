@@ -804,6 +804,37 @@ ol {
     display: block;
 }
 
+.post-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+    font-size: 0.8125rem;
+}
+
+.post-content th,
+.post-content td {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    text-align: left;
+}
+
+.post-content th {
+    background: var(--bg-card);
+    color: var(--text-heading);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.post-content td {
+    color: var(--text-secondary);
+}
+
+.post-content tbody tr:hover {
+    background: var(--bg-card-hover);
+}
+
 .post-content blockquote {
     border-left: 2px solid var(--accent);
     padding-left: 1rem;
