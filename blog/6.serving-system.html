@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Building a University LLM Serving System — FTU Labs</title>
-    <meta name="description" content="How we're building a multi-tier LLM serving system for a university — semantic routing, multi-LoRA hot-swap, training-as-a-service, and 43 nodes working together.">
+    <title>Designing an LLM Serving Platform for a University — FTU Labs</title>
+    <meta name="description" content="How we're building a multi-tier LLM inference platform with semantic routing, multi-LoRA serving, and training-as-a-service on heterogeneous hardware.">
     <link rel="icon" href="/img/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,635 +49,366 @@
             <a href="../blog.html" class="post-back animate">&larr; back to blog</a>
 
             <header class="post-header animate animate-d1">
-                <h1 class="post-title">Building a University LLM Serving System</h1>
+                <h1 class="post-title">Designing an LLM Serving Platform for a University</h1>
                 <div class="post-meta">2026-06-11 &middot; FTU Labs &middot; 12 min read</div>
             </header>
 
             <article class="post-content animate animate-d2">
 
                 <p>
-                    Four months ago we wrote about
-                    <a href="3.swarm.html">turning 88 laptops into a Docker Swarm LLM cluster</a>.
-                    That system worked &mdash; 40 CPU nodes running a 4B model, an Nvidia Xavier
-                    running 35B, all behind nginx. But it was a flat architecture:
-                    every request got the same model, every user got the same experience,
-                    and there was no way to customize the system for specific academic disciplines.
+                    This is an update to our <a href="3.swarm.html">Docker Swarm cluster</a> and
+                    <a href="5.ftu-cluster.html">V100 GPU build</a> posts.
+                    Over the past three months, the cluster has evolved from a simple round-robin LLM proxy
+                    into something closer to a real serving platform &mdash;
+                    with intelligent routing, speculative decoding, multi-LoRA adapters, and the beginnings of a training-as-a-service system.
+                    This post covers what we&rsquo;ve built, what the numbers look like now, and where we&rsquo;re headed.
                 </p>
 
                 <p>
-                    We&rsquo;ve been rebuilding. The goal is a proper <strong>LLM serving system for a university</strong> &mdash;
-                    one where a law student gets domain-tuned responses backed by legal RAG,
-                    a finance student gets quantitative analysis with the right LoRA adapter loaded,
-                    and a first-year just chatting about homework gets a fast response from a CPU node
-                    without burning GPU cycles.
+                    The platform is live at <a href="https://swarm.ftds.online">swarm.ftds.online</a>.
+                    The system design lives in <a href="https://github.com/ftulabs/cluster">ftulabs/cluster</a>.
+                    This is ongoing work &mdash; some parts are in production, some are being built.
+                </p>
+
+                <h2>The Problem</h2>
+
+                <p>
+                    A university has wildly heterogeneous users.
+                    A first-year student asking &ldquo;what is GDP?&rdquo; and a law professor analyzing a 50-page contract
+                    should not hit the same model on the same hardware.
+                    The student&rsquo;s query can run on a 4B model on a CPU node in milliseconds.
+                    The professor&rsquo;s query needs a 28B model on a V100 with domain-specific knowledge.
                 </p>
 
                 <p>
-                    This is ongoing work. Some pieces are in production, some are being built.
-                    This post covers the architecture and what we&rsquo;ve shipped so far.
+                    We also have departments that want their own fine-tuned models &mdash;
+                    law, finance, international business &mdash;
+                    but nobody has the infrastructure or expertise to train and serve them.
+                    They want to upload a dataset and get a working model back.
                 </p>
+
+                <p>So the platform has two services:</p>
+
+                <ol>
+                    <li><strong>Inference-as-a-Service</strong> &mdash; chat via OpenWebUI with automatic routing to the right hardware and the right domain configuration (LoRA, RAG, MCP tools).</li>
+                    <li><strong>Training-as-a-Service</strong> &mdash; submit a fine-tuning job, get back a deployed LoRA adapter that plugs into the inference tier.</li>
+                </ol>
+
+                <h2>What Changed: Performance Update</h2>
+
+                <p>
+                    Since the original posts, every tier has gotten significantly faster.
+                    The biggest surprise was the CPU workers.
+                </p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tier</th>
+                            <th>Before</th>
+                            <th>Now</th>
+                            <th>What Changed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>CPU (40&times; i7)</strong></td>
+                            <td>~2 t/s</td>
+                            <td><strong>~10 t/s</strong></td>
+                            <td>Qwen3.5-4B-MTP Q4_K_XL + flash attention + q4_0 KV cache + batch tuning</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Xavier AGX</strong></td>
+                            <td>~11 t/s</td>
+                            <td><strong>~16 t/s</strong></td>
+                            <td>Qwen3.6-35B-A3B Q4_K_XL, turbo2 KV cache (6.4&times; compression), 524K context</td>
+                        </tr>
+                        <tr>
+                            <td><strong>V100 4&times;SXM2</strong></td>
+                            <td>(new)</td>
+                            <td><strong>~78 t/s</strong></td>
+                            <td>REAP-28B Q4_K_M, 4-GPU NVLink shared memory</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    The CPU speedup deserves a deeper look.
+                    The old config ran Qwen3.5-4B at Q8_0 quantization with 1 parallel slot, no flash attention.
+                    We benchmarked exhaustively on an i7-13700 and found that:
+                </p>
+
+                <ul>
+                    <li><strong>Q4_K_XL beats Q8_0</strong> by +33% throughput &mdash; the model is memory-bandwidth-bound on DDR5, and halving the weight size helps more than preserving precision.</li>
+                    <li><strong>Flash attention + KV cache quantization</strong> (q4_0) frees enough RAM to run 4 parallel slots within the 16 GB budget, which is the real throughput multiplier under concurrent load.</li>
+                    <li><strong>Intel iGPU (Vulkan)</strong> is a dead end: &minus;40% vs pure CPU. The UHD 770 can&rsquo;t beat AVX_VNNI + DDR5 on a model this small.</li>
+                    <li><strong>Speculative decoding with a draft model</strong> (0.8B Qwen) also loses: &minus;25-30%. No GPU to hide the draft compute cost.</li>
+                </ul>
+
+                <p>
+                    In production, the CPU workers mostly sit idle &mdash;
+                    the semantic router sends traffic to Xavier and V100 first.
+                    But when 20+ students hit the system simultaneously during an exam review session,
+                    having 40 nodes at ~10 t/s each (~396 t/s aggregate at 80 concurrent users) means nobody waits.
+                </p>
+
+                <h2>Semantic Router: Three Tiers, One Chat</h2>
+
+                <p>
+                    The user sees a single chat interface at <a href="https://swarm.ftds.online">swarm.ftds.online</a>.
+                    Behind it, an OpenWebUI filter scores every message and routes it to the appropriate hardware tier.
+                </p>
+
+                <pre><code class="language-plaintext">User message
+    │
+    ▼
+┌─────────────────────────────┐
+│     Semantic Router         │
+│                             │
+│  1. Extract text + images   │
+│  2. Score complexity:       │
+│     - word count            │
+│     - pattern matching      │
+│       (code? analysis?      │
+│        explain? debug?)     │
+│     - conversation depth    │
+│  3. Check conversation      │
+│     affinity (sticky tier)  │
+│  4. Health-probe GPU tiers  │
+│  5. Route to tier           │
+└──────┬──────┬──────┬────────┘
+       │      │      │
+  ┌────▼──┐ ┌─▼───┐ ┌▼─────┐
+  │ CPU   │ │Xavier│ │ V100 │
+  │ 4B    │ │ 35B  │ │ 28B  │
+  │ ~10t/s│ │~16t/s│ │~78t/s│
+  └───────┘ └──────┘ └──────┘</code></pre>
+
+                <p>The routing logic:</p>
+
+                <ul>
+                    <li><strong>V100 tier</strong>: messages with 100+ words, or complexity score &ge; 60 with 50+ words. This catches code review requests, long analysis prompts, multi-step reasoning.</li>
+                    <li><strong>Xavier tier</strong>: 50+ words, or complexity score &ge; 30, or any message containing images (Xavier has the vision projector). Code generation, medium-length explanations, translations.</li>
+                    <li><strong>CPU tier</strong>: greetings, short factual questions (&ldquo;what is GDP?&rdquo;), and fallback when GPU tiers are down.</li>
+                </ul>
+
+                <p>
+                    <strong>Conversation affinity</strong> is the key design choice.
+                    Once a conversation is assigned to a tier, all subsequent messages in that chat stay on the same tier.
+                    The tier can <em>escalate</em> (CPU &rarr; Xavier &rarr; V100) but never downgrade.
+                    This preserves KV cache coherence &mdash;
+                    if a user starts a complex debugging session on the V100 and then sends a short follow-up message,
+                    that message stays on the V100 where the context is already cached.
+                </p>
+
+                <p>
+                    <strong>Health-aware failover</strong>: the router probes each GPU tier&rsquo;s <code>/health</code> endpoint
+                    (cached for 15 seconds). If the V100 goes down mid-conversation, requests fall through to Xavier, then to CPU.
+                    When the V100 comes back, new conversations can route to it again.
+                </p>
+
+                <h2>Domain-Aware Serving: LoRA + RAG + MCP</h2>
+
+                <p>
+                    The next layer we&rsquo;re building selects domain-specific configuration based on the user&rsquo;s request.
+                    The V100 tier runs vLLM with multi-LoRA support, meaning a single base model can serve
+                    dozens of fine-tuned variants simultaneously without reloading.
+                </p>
+
+                <pre><code class="language-plaintext">vLLM (REAP-28B base model, frozen)
+    │
+    ├── Request: "Analyze this contract clause"
+    │   → LoRA: law-v2 (50MB adapter)
+    │   → RAG: Vietnamese legal corpus
+    │   → MCP: legal-search tool
+    │
+    ├── Request: "What's the DCF valuation of VNM?"
+    │   → LoRA: finance-v1 (50MB adapter)
+    │   → RAG: market data, SEC filings
+    │   → MCP: stock ticker tool
+    │
+    └── Request: "Explain photosynthesis"
+        → LoRA: none (base model)
+        → RAG: course materials
+        → MCP: web-search, calculator</code></pre>
+
+                <p>
+                    The architecture follows the pattern AWS documented for
+                    <a href="https://aws.amazon.com/blogs/machine-learning/efficiently-serve-dozens-of-fine-tuned-models-with-vllm-on-amazon-sagemaker-ai-and-amazon-bedrock/">serving dozens of fine-tuned models with vLLM</a>.
+                    The core insight: LoRA adapters are small (two matrices per layer, ~50MB for rank-16 on a 28B model).
+                    The base model weights are frozen and shared across all requests.
+                    Per request, the output is <code>y = xW + xAB</code> &mdash;
+                    the base projection plus the low-rank adapter contribution.
+                    No cold start, no model reload, no wasted GPU memory.
+                </p>
+
+                <p>
+                    Each domain configuration bundles three things:
+                </p>
+
+                <ul>
+                    <li><strong>LoRA adapter</strong> &mdash; fine-tuned on domain-specific data (legal texts, financial reports, medical guidelines). Hot-swapped per request via vLLM&rsquo;s multi-LoRA API.</li>
+                    <li><strong>RAG collection</strong> &mdash; a partitioned vector store (ChromaDB or Qdrant) with domain-specific documents. The router attaches relevant context before the request hits the LLM.</li>
+                    <li><strong>MCP tools</strong> &mdash; domain-specific tool servers. A law adapter gets a legal database search tool. A finance adapter gets a real-time stock data tool. The LLM can call these tools as part of its response.</li>
+                </ul>
+
+                <h2>Training-as-a-Service</h2>
+
+                <p>
+                    The second half of the platform.
+                    Departments want custom models but don&rsquo;t have ML engineers.
+                    The idea: provide a web UI where users upload a dataset, pick a base model (4B only, for now),
+                    and get back a deployed LoRA adapter &mdash; without touching a terminal.
+                </p>
+
+                <p>
+                    This is inspired by platforms like
+                    <a href="https://thinkingmachines.ph">Thinking Machines&rsquo; Tinker</a>,
+                    <a href="https://huggingface.co/autotrain">HuggingFace AutoTrain</a>, and
+                    <a href="https://github.com/hiyouga/LLaMA-Factory">LLaMA Factory</a> &mdash;
+                    but scoped to our hardware and use case.
+                </p>
+
+                <pre><code class="language-plaintext">Training Pipeline:
+
+  Upload dataset    →   Validate &     →   QLoRA training    →   Automated     →   Deploy to
+  (JSONL / CSV)         auto-format         (Unsloth/PEFT)        evaluation        LoRA library
+                        to chat                                   (lm-eval +        → hot-swap
+                        template             V100 or H100          custom            into vLLM
+                                             off-hours             prompts)          → router
+                                             scheduling                              update</code></pre>
+
+                <p>The platform handles:</p>
+
+                <ul>
+                    <li><strong>Data preprocessing</strong> &mdash; auto-converts CSV/JSONL to the model&rsquo;s chat template format. Users don&rsquo;t need to know about special tokens or role tags.</li>
+                    <li><strong>Training optimization</strong> &mdash; QLoRA (4-bit NF4 quantization) via Unsloth, which halves memory and doubles speed. Default hyperparameters are auto-tuned; power users can override.</li>
+                    <li><strong>GPU scheduling</strong> &mdash; training jobs run on V100 or H100 during off-hours (22:00&ndash;08:00) or when inference load is below 50%. Inference always has priority &mdash; a training job will be preempted rather than degrade chat response times.</li>
+                    <li><strong>Evaluation</strong> &mdash; automated benchmarks (lm-eval-harness) plus user-defined test prompts. The adapter must pass a quality gate before deployment.</li>
+                    <li><strong>Deployment</strong> &mdash; passing adapters are copied to the shared LoRA library on NFS. vLLM picks them up via API without restart. The semantic router is updated to map domain requests to the new adapter.</li>
+                </ul>
 
                 <h2>Architecture Overview</h2>
 
                 <p>
-                    The system has two user-facing surfaces and three internal layers:
+                    How all the pieces connect:
                 </p>
 
-<pre><code class="language-plaintext">                    ┌──────────────────────────────────────────────────────┐
-                    │              swarm.ftds.online (Open WebUI)          │
-                    │                                                      │
-                    │   Chat UI ─── Google OAuth (ftu.edu.vn only)         │
-                    │       │                                              │
-                    │       ▼                                              │
-                    │   Semantic Router (inlet filter)                     │
-                    │       │                                              │
-                    │       ├── simple  ──▶  Tier 3: CPU pool (40 nodes)  │
-                    │       │                Qwen 4B · ~10 t/s/node       │
-                    │       │                                              │
-                    │       ├── medium  ──▶  Tier 2: Xavier AGX           │
-                    │       │                Qwen 35B · ~16 t/s           │
-                    │       │                                              │
-                    │       └── complex ──▶  Tier 1: V100 cluster         │
-                    │                        REAP-28B · ~78 t/s           │
-                    │                                                      │
-                    │   Skills / LoRA / RAG loaded per-request             │
-                    └──────────────────────────────────────────────────────┘
+                <pre><code class="language-plaintext">                         Internet (swarm.ftds.online)
+                              │
+                         frp reverse proxy
+                              │
+                    ┌─────────▼──────────────────────────────────┐
+                    │            Leader Node (10.0.190.65)       │
+                    │                                            │
+                    │  OpenWebUI :3001 ← Google OAuth (ftu.edu.vn)
+                    │      │                                     │
+                    │  ┌───▼───────────────┐                     │
+                    │  │  Semantic Router   │  complexity +       │
+                    │  │  (OWUI filter)     │  domain scoring     │
+                    │  └───┬──────┬────┬───┘                     │
+                    │      │      │    │      Training UI :8500   │
+                    │      │      │    │      ChromaDB    :8000   │
+                    │      │      │    │      Redis       :6379   │
+                    │      │      │    │      Prometheus  :9090   │
+                    │      │      │    │      Grafana     :3000   │
+                    └──────┼──────┼────┼──────────────────────────┘
+                           │      │    │
+          ┌────────────────┘      │    └──────────────────┐
+          │                       │                       │
+   ┌──────▼──────┐    ┌──────────▼────────┐    ┌─────────▼──────────┐
+   │   CPU Tier  │    │   Xavier Tier     │    │    V100 Tier       │
+   │             │    │                   │    │                    │
+   │ 40x i7     │    │ Jetson Xavier AGX │    │ 4x V100-SXM2      │
+   │ 16GB each  │    │ 30GB RAM          │    │ 64GB VRAM, NVLink  │
+   │             │    │                   │    │                    │
+   │ llama.cpp  │    │ llama.cpp         │    │ vLLM               │
+   │ Qwen 4B    │    │ Qwen 35B MoE     │    │ REAP-28B base      │
+   │ Q4_K_XL    │    │ IQ4_XS           │    │ + multi-LoRA       │
+   │ +ngram+MTP │    │ +MTP d=3         │    │ + domain adapters  │
+   │             │    │ +vision (mmproj) │    │                    │
+   │ ~10 t/s    │    │ ~16 t/s          │    │ ~78 t/s            │
+   │             │    │                   │    │                    │
+   │ Simple Q&A │    │ Reasoning,       │    │ Complex analysis,  │
+   │ Greetings  │    │ Vision, Code     │    │ Domain-specific,   │
+   │ Fallback   │    │                   │    │ Long-form          │
+   └─────────────┘    └───────────────────┘    └─────────┬──────────┘
+                                                         │
+                                               ┌─────────▼──────────┐
+                                               │  LoRA Library      │
+                                               │  (NFS shared)      │
+                                               │                    │
+                                               │  law-v2     ~50MB  │
+                                               │  finance-v1 ~50MB  │
+                                               │  medical-v1 ~50MB  │
+                                               │  code-v1    ~50MB  │
+                                               │  ...               │
+                                               └────────────────────┘</code></pre>
 
-                    ┌──────────────────────────────────────────────────────┐
-                    │          Training-as-a-Service (planned)             │
-                    │                                                      │
-                    │   Web UI (Llama Factory / Unsloth style)             │
-                    │       │                                              │
-                    │       ▼                                              │
-                    │   Job Queue ──▶ H100 (fine-tune 4B models)          │
-                    │       │                                              │
-                    │       ▼                                              │
-                    │   Eval ──▶ LoRA Library ──▶ Hot-swap into serving   │
-                    └──────────────────────────────────────────────────────┘</code></pre>
-
-                <h2>What Changed Since the Swarm Post</h2>
-
-                <p>
-                    The original cluster was 40 CPU nodes behind nginx with equal weighting.
-                    Here&rsquo;s what&rsquo;s different now:
-                </p>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Aspect</th>
-                            <th>February 2026</th>
-                            <th>June 2026</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Nodes</td>
-                            <td>40 CPU + 1 Xavier</td>
-                            <td>40 CPU + 1 Xavier + 4&times;V100</td>
-                        </tr>
-                        <tr>
-                            <td>CPU model</td>
-                            <td>Qwen 4B Q4_K_M</td>
-                            <td>Qwen 4B MTP-UD Q4_K_XL + speculative decoding</td>
-                        </tr>
-                        <tr>
-                            <td>Routing</td>
-                            <td>nginx round-robin</td>
-                            <td>Semantic router (complexity-based tier assignment)</td>
-                        </tr>
-                        <tr>
-                            <td>Throughput (80 users)</td>
-                            <td>~330 t/s aggregate</td>
-                            <td>~396 t/s aggregate (CPU only, higher with GPU tiers)</td>
-                        </tr>
-                        <tr>
-                            <td>Skills</td>
-                            <td>None</td>
-                            <td>13 presets + 134-skill library</td>
-                        </tr>
-                        <tr>
-                            <td>Auth</td>
-                            <td>Open LAN access</td>
-                            <td>Google OAuth (ftu.edu.vn domain)</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <p>
-                    The CPU nodes got a meaningful upgrade: switching from plain Q4_K_M to
-                    <strong>MTP-UD Q4_K_XL with speculative decoding</strong> (ngram-mod + draft-MTP)
-                    improved single-node throughput. Combined with flash attention and q4_0 KV cache quantization,
-                    each node now runs 4 parallel slots within its 16 GB RAM budget.
-                    At 80 concurrent users across 40 nodes, the cluster sustains <strong>396 tokens/second</strong>
-                    with zero failures.
-                </p>
-
-                <h2>The Semantic Router</h2>
-
-                <p>
-                    The router is the core of the new architecture.
-                    It runs as an <strong>inlet filter</strong> inside Open WebUI &mdash;
-                    a Python function that intercepts every chat completion request before it hits a backend.
-                    The filter scores each message for complexity and routes it to the appropriate tier.
-                </p>
-
-                <h3>How it scores</h3>
-
-                <p>
-                    The scoring is intentionally simple &mdash; no ML model, no embeddings, just pattern matching
-                    that runs in microseconds:
-                </p>
-
-<pre><code class="language-python">def score_complexity(messages):
-    last_msg = messages[-1]["content"]
-    word_count = len(last_msg.split())
-    score = 0
-
-    # Length signals complexity
-    if word_count > 100:
-        score += 40
-    elif word_count > 50:
-        score += 20
-
-    # Pattern matching for complex tasks
-    complex_patterns = [
-        "explain", "analyze", "implement", "algorithm",
-        "machine learning", "security", "architecture",
-        "compare", "evaluate", "design"
-    ]
-    for pattern in complex_patterns:
-        if pattern in last_msg.lower():
-            score += 10
-
-    # Penalize simple interactions
-    simple_patterns = ["hi", "hello", "thanks", "ok"]
-    if last_msg.strip().lower() in simple_patterns:
-        score -= 50
-
-    # Conversation depth adds weight
-    score += len(messages) * 2
-
-    return score</code></pre>
-
-                <h3>Tier assignment</h3>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Score</th>
-                            <th>Tier</th>
-                            <th>Backend</th>
-                            <th>Model</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>&lt; 20</td>
-                            <td>Tier 3</td>
-                            <td>CPU pool (40 nodes)</td>
-                            <td>Qwen 4B</td>
-                        </tr>
-                        <tr>
-                            <td>20&ndash;49</td>
-                            <td>Tier 2</td>
-                            <td>Xavier AGX</td>
-                            <td>Qwen 35B</td>
-                        </tr>
-                        <tr>
-                            <td>&ge; 50</td>
-                            <td>Tier 1</td>
-                            <td>V100 cluster</td>
-                            <td>REAP-28B</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <h3>Sticky sessions</h3>
-
-                <p>
-                    Once a conversation is assigned to a tier, it <strong>stays there</strong>.
-                    The router tracks conversation IDs with a 30-minute TTL.
-                    This serves two purposes:
-                </p>
+                <h2>What We Learned So Far</h2>
 
                 <ul>
                     <li>
-                        <strong>KV cache coherence</strong> &mdash; moving a conversation to a different backend
-                        means rebuilding the KV cache from scratch.
-                        On the V100 with a 28B model, that&rsquo;s seconds of wasted prefill.
+                        <strong>CPU inference is better than expected.</strong>
+                        With the right quantization (Q4_K_XL), speculative decoding (ngram+MTP), and batch tuning,
+                        i7-13700 nodes went from ~2 t/s to ~10 t/s per node &mdash; fast enough for real-time chat.
+                        Under Locust stress tests, the cluster sustains ~396 t/s aggregate at 80 concurrent users.
                     </li>
                     <li>
-                        <strong>Escalation only</strong> &mdash; conversations can move <em>up</em> to a more powerful tier
-                        (if a simple chat turns into a complex request), but never down.
-                        This prevents quality degradation mid-conversation.
+                        <strong>Speculative decoding is hardware-dependent.</strong>
+                        MTP helps on H100 (+12%), helps on CPU with ngram-mod (+49% concurrent),
+                        but hurts on V100 and Xavier (compute-bound, not bandwidth-bound).
+                        DFlash speculative decoding shows 4.2&times; speedup on H100, but is net-negative on V100 via llama.cpp &mdash;
+                        Volta&rsquo;s compute throughput can&rsquo;t amortize the draft overhead.
+                        Always benchmark on your actual hardware before committing to a speculative strategy.
+                    </li>
+                    <li>
+                        <strong>REAP pruning doesn&rsquo;t hurt quality.</strong>
+                        Our REAP-28B (pruned from 35B, 256&rarr;205 experts) runs faster per token
+                        with negligible quality loss on our eval suite. The pruned model serves well on V100
+                        where the smaller active parameter count matters for VRAM and compute.
+                    </li>
+                    <li>
+                        <strong>Multi-LoRA changes the economics.</strong>
+                        Instead of one GPU per department, one GPU serves all departments simultaneously.
+                        Each LoRA adapter adds ~50MB to a 28B base model &mdash;
+                        you can fit dozens of domain-specific models in 64GB of VRAM.
+                        Hot-swapping per request means no cold starts, no idle GPUs.
+                    </li>
+                    <li>
+                        <strong>Conversation affinity matters for KV cache.</strong>
+                        Letting the router downgrade mid-conversation (V100 &rarr; CPU) wastes the KV cache
+                        built up on the GPU and forces re-prefill on the new tier.
+                        Sticky routing (escalate-only) keeps the cache warm.
                     </li>
                 </ul>
 
-                <p>
-                    The router also health-checks each GPU tier.
-                    If the V100 node is down, Tier 1 requests fall back to Xavier.
-                    If Xavier is down, everything goes to the CPU pool.
-                    The CPU pool is always available &mdash; 40 nodes make it effectively indestructible.
-                </p>
+                <h2>What&rsquo;s Next</h2>
 
-                <h2>Skills and Domain Specialization</h2>
-
-                <p>
-                    Raw model access isn&rsquo;t enough for a university.
-                    A student writing a thesis needs different capabilities than one debugging Python homework.
-                    We handle this through <strong>Open WebUI model presets</strong> &mdash;
-                    specialized system prompts that wrap the base model with domain expertise.
-                </p>
-
-                <p>We currently deploy 13 presets:</p>
-
-                <ul>
-                    <li><strong>Scientific Writer</strong> &mdash; IMRAD structure, citation styles (APA, AMA, Vancouver), CONSORT/STROBE/PRISMA reporting guidelines</li>
-                    <li><strong>Literature Reviewer</strong> &mdash; PICO framework, multi-database search strategy, PRISMA synthesis</li>
-                    <li><strong>Statistical Analyst</strong> &mdash; test selection, assumption checking, APA-formatted results</li>
-                    <li><strong>Data Explorer</strong> &mdash; EDA on uploaded files</li>
-                    <li><strong>Peer Reviewer</strong> &mdash; structured manuscript review with severity ratings</li>
-                    <li><strong>Grant Writer</strong> &mdash; proposals targeting NSF, NIH, DOE, DARPA formats</li>
-                    <li><strong>ML Engineer</strong> &mdash; scikit-learn pipelines, model selection, evaluation</li>
-                    <li><strong>Market Researcher</strong> &mdash; consulting-style reports with TAM/SAM/SOM analysis</li>
-                    <li><strong>What-If Analyst</strong> &mdash; scenario modeling and sensitivity analysis</li>
-                    <li>Plus: Hypothesis Generator, Data Visualizer, Citation Manager, Diagram Writer</li>
-                </ul>
-
-                <p>
-                    Behind these presets sits a <strong>skill library of 134 specialized skills</strong>,
-                    indexed by keyword. When a user selects a preset,
-                    the system loads the relevant skills covering domains from bioinformatics and drug discovery
-                    to finance, geospatial analysis, and quantum computing.
-                </p>
-
-                <p>
-                    All presets are deployed programmatically via a script that writes directly to
-                    Open WebUI&rsquo;s SQLite database &mdash; no manual UI clicking required.
-                    This makes the skill set version-controlled and reproducible.
-                </p>
-
-                <h2>Multi-LoRA Serving (In Progress)</h2>
-
-                <p>
-                    Skills and system prompts go far, but they have limits.
-                    A system prompt can tell the model <em>how</em> to behave,
-                    but it can&rsquo;t teach it domain knowledge it never learned during pre-training.
-                    For that, we need fine-tuning &mdash; and for a university serving multiple departments,
-                    we need to serve <strong>many fine-tuned variants from a single base model</strong>.
-                </p>
-
-                <p>
-                    This is where <strong>multi-LoRA serving</strong> comes in.
-                    The idea, well-described in
-                    <a href="https://aws.amazon.com/blogs/machine-learning/efficiently-serve-dozens-of-fine-tuned-models-with-vllm-on-amazon-sagemaker-ai-and-amazon-bedrock/">
-                    AWS&rsquo;s multi-LoRA post</a>, is straightforward:
-                </p>
+                <p>The immediate work:</p>
 
                 <ol>
-                    <li>Keep the <strong>base model weights frozen</strong> on the GPU &mdash; one copy, shared across all requests.</li>
-                    <li>Store <strong>LoRA adapters</strong> (small low-rank matrices, typically 10&ndash;50 MB each) in a library.</li>
-                    <li>At inference time, <strong>inject the relevant adapter per-request</strong> &mdash; a law query activates the law LoRA, a finance query activates the finance LoRA.</li>
-                    <li>The adapter swap happens at the kernel level with near-zero overhead &mdash; no model reloading, no GPU memory duplication.</li>
+                    <li><strong>Domain detection in the router</strong> &mdash; extending the semantic router to classify domain (law/finance/medical/general) and pass the correct LoRA adapter name to vLLM.</li>
+                    <li><strong>RAG pipeline</strong> &mdash; ChromaDB with per-domain collections, integrated into the OpenWebUI request pipeline.</li>
+                    <li><strong>Training UI</strong> &mdash; a web interface for submitting QLoRA fine-tuning jobs, monitoring progress, and browsing the adapter library.</li>
+                    <li><strong>Multi-LoRA on V100</strong> &mdash; migrating the V100 from llama.cpp to vLLM with <code>--enable-lora</code> for per-request adapter hot-swap.</li>
                 </ol>
 
                 <p>
-                    For MoE models like our Qwen variants, vLLM provides a <code>fused_moe_lora</code> kernel
-                    that integrates LoRA operations into the expert routing kernel itself &mdash;
-                    handling both the MoE sparsity and the adapter selection in a single pass.
+                    The full system design and implementation roadmap is in the
+                    <a href="https://github.com/ftulabs/cluster">cluster repo README</a>.
+                    We&rsquo;ll post updates as each component lands in production.
                 </p>
 
-                <h3>Our plan</h3>
-
-                <p>
-                    We&rsquo;re building toward a LoRA library with adapters for specific FTU departments:
-                </p>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Adapter</th>
-                            <th>Training Data</th>
-                            <th>Use Case</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>law-vn</td>
-                            <td>Vietnamese legal codes, court decisions</td>
-                            <td>Legal document analysis, case lookup</td>
-                        </tr>
-                        <tr>
-                            <td>finance-quant</td>
-                            <td>Financial reports, quantitative analysis papers</td>
-                            <td>Portfolio analysis, risk modeling</td>
-                        </tr>
-                        <tr>
-                            <td>accounting-vn</td>
-                            <td>Vietnamese accounting standards (VAS), tax regulations</td>
-                            <td>Financial statement preparation, audit support</td>
-                        </tr>
-                        <tr>
-                            <td>trade-intl</td>
-                            <td>International trade law, customs procedures</td>
-                            <td>Trade compliance, Incoterms analysis</td>
-                        </tr>
-                        <tr>
-                            <td>academic-writing</td>
-                            <td>Published papers, thesis examples</td>
-                            <td>Research writing, citation formatting</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <p>
-                    The semantic router will be extended to detect domain context
-                    and attach the appropriate <code>lora_adapter</code> parameter to the request
-                    before it reaches vLLM.
-                    Combined with RAG (retrieval over department-specific document stores),
-                    this gives each department a model that both <em>knows</em> their domain
-                    and can <em>retrieve</em> current documents.
-                </p>
-
-                <h2>Training-as-a-Service (Planned)</h2>
-
-                <p>
-                    The second user-facing surface is more ambitious:
-                    <strong>let users train their own models</strong>.
-                </p>
-
-                <p>
-                    The inspiration comes from services like
-                    <a href="https://huggingface.co/autotrain">Hugging Face AutoTrain</a>
-                    and Thinking Machines&rsquo; Tinker &mdash;
-                    platforms that abstract away the complexity of fine-tuning
-                    and let users focus on their data and evaluation criteria.
-                </p>
-
-                <h3>How it will work</h3>
-
-<pre><code class="language-plaintext">User uploads dataset (CSV, JSONL, or conversational format)
-    │
-    ▼
-Web UI (Llama Factory / Unsloth-style interface)
-    │  ─ select base model (Qwen 4B variants for now)
-    │  ─ configure: LoRA rank, learning rate, epochs
-    │  ─ or just click "Auto" and let us pick
-    │
-    ▼
-Job Queue
-    │  ─ scheduled on H100 (95 GB VRAM)
-    │  ─ training optimization handled by platform:
-    │      · automatic batch size tuning
-    │      · gradient checkpointing
-    │      · mixed-precision (bf16)
-    │      · early stopping on eval loss
-    │
-    ▼
-Evaluation
-    │  ─ automated benchmarks against base model
-    │  ─ domain-specific eval if provided
-    │  ─ human review gate (optional)
-    │
-    ▼
-Deploy
-    ─ LoRA adapter added to library
-    ─ hot-swapped into serving (no restart)
-    ─ available as a selectable model in Open WebUI</code></pre>
-
-                <p>
-                    We&rsquo;re starting with <strong>4B models only</strong>.
-                    At this size, a LoRA fine-tune on the H100 takes minutes, not hours &mdash;
-                    fast enough for an interactive workflow where a researcher
-                    can iterate on their training data and see results quickly.
-                </p>
-
-                <h3>Why LoRA, not full fine-tuning</h3>
-
-                <p>Three practical reasons:</p>
+                <h2>Links</h2>
 
                 <ul>
-                    <li>
-                        <strong>Storage</strong> &mdash; a full 4B model checkpoint is ~8 GB.
-                        A LoRA adapter is 10&ndash;50 MB.
-                        With dozens of department-specific variants, the difference
-                        between storing full models vs. adapters is 100&times;.
-                    </li>
-                    <li>
-                        <strong>Serving efficiency</strong> &mdash; one base model in GPU memory,
-                        adapters swapped per-request.
-                        Full fine-tunes would require loading separate model instances,
-                        which doesn&rsquo;t scale on our hardware.
-                    </li>
-                    <li>
-                        <strong>Composability</strong> &mdash; LoRA adapters can theoretically be merged or stacked.
-                        A student in international business law could benefit from both
-                        the <code>law-vn</code> and <code>trade-intl</code> adapters.
-                    </li>
+                    <li><a href="https://swarm.ftds.online">swarm.ftds.online</a> &mdash; live cluster</li>
+                    <li><a href="https://github.com/ftulabs/cluster">ftulabs/cluster</a> &mdash; source code, deployment docs</li>
+                    <li><a href="3.swarm.html">Blog: Building a 40-Node LLM Cluster with Docker Swarm</a></li>
+                    <li><a href="5.ftu-cluster.html">Blog: Building a V100 SXM2 GPU Cluster on a University Budget</a></li>
+                    <li><a href="https://aws.amazon.com/blogs/machine-learning/efficiently-serve-dozens-of-fine-tuned-models-with-vllm-on-amazon-sagemaker-ai-and-amazon-bedrock/">AWS: Multi-LoRA serving with vLLM</a> &mdash; architecture reference</li>
                 </ul>
-
-                <h3>The hot-swap pipeline</h3>
-
-                <p>
-                    Once a LoRA adapter is trained and evaluated, deploying it should be instant.
-                    vLLM supports <code>--enable-lora</code> with a configurable adapter directory &mdash;
-                    new adapters placed in the directory become available for the next request
-                    without restarting the server.
-                    The serving layer maps adapter names to request parameters:
-                </p>
-
-<pre><code class="language-python"># Adapter selection in the semantic router
-if domain == "law" and lang == "vi":
-    request["model"] = "qwen-4b"  # base model
-    request["lora_adapter"] = "law-vn"
-elif domain == "finance":
-    request["model"] = "qwen-4b"
-    request["lora_adapter"] = "finance-quant"
-else:
-    request["model"] = "qwen-4b"  # no adapter, base model only</code></pre>
-
-                <p>
-                    This integrates with the existing semantic router &mdash;
-                    the same filter that picks the tier (CPU/Xavier/V100)
-                    also picks the LoRA adapter based on conversation context.
-                </p>
-
-                <h2>Current Performance</h2>
-
-                <p>
-                    Here&rsquo;s where each tier stands today:
-                </p>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Tier</th>
-                            <th>Hardware</th>
-                            <th>Model</th>
-                            <th>Single-Stream</th>
-                            <th>Concurrent</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>3 (CPU)</td>
-                            <td>40&times; i7-13700H</td>
-                            <td>Qwen 4B Q4_K_XL</td>
-                            <td>~10 t/s</td>
-                            <td>396 t/s @ 80 users</td>
-                        </tr>
-                        <tr>
-                            <td>2 (Xavier)</td>
-                            <td>Jetson AGX</td>
-                            <td>Qwen 35B A3B</td>
-                            <td>~16 t/s</td>
-                            <td>~7 t/s/slot &times; 4</td>
-                        </tr>
-                        <tr>
-                            <td>1 (V100)</td>
-                            <td>4&times; V100 SXM2</td>
-                            <td>REAP-28B Q4_K_M</td>
-                            <td>~78 t/s</td>
-                            <td>TBD</td>
-                        </tr>
-                        <tr>
-                            <td>Train</td>
-                            <td>H100 NVL 95 GB</td>
-                            <td>n/a (fine-tuning)</td>
-                            <td>n/a</td>
-                            <td>n/a</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <p>
-                    The CPU tier is deceptively strong.
-                    Individually each i7 node is slow (~10 t/s), but 40 of them in parallel
-                    handle the bulk of university traffic &mdash;
-                    most interactions are simple questions that a 4B model handles perfectly well.
-                    The semantic router ensures GPU resources are reserved for requests
-                    that actually need them.
-                </p>
-
-                <h2>Monitoring</h2>
-
-                <p>
-                    Every node runs Prometheus <code>node-exporter</code>.
-                    Grafana dashboards show per-node CPU, memory, and GPU utilization in real time.
-                    LiteLLM provides a second routing layer with latency-based request distribution
-                    across all 43 backends, with automatic cooldown (60s) for nodes that fail 3 consecutive requests.
-                </p>
-
-                <p>
-                    The monitoring stack answers the questions that matter in production:
-                </p>
-
-                <ul>
-                    <li>Which nodes are overloaded? (CPU % &gt; 90% sustained)</li>
-                    <li>Is the NFS model store a bottleneck? (read latency on /opt/cluster/models)</li>
-                    <li>Are GPU tiers healthy? (semantic router health probes)</li>
-                    <li>What&rsquo;s the actual tier distribution? (% requests hitting CPU vs Xavier vs V100)</li>
-                </ul>
-
-                <h2>What&rsquo;s Left to Build</h2>
-
-                <p>
-                    We&rsquo;re being honest about what&rsquo;s shipping vs. what&rsquo;s planned:
-                </p>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Component</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Semantic router (3-tier)</td>
-                            <td><strong>Shipped</strong> &mdash; in production</td>
-                        </tr>
-                        <tr>
-                            <td>CPU pool (40 nodes, Qwen 4B)</td>
-                            <td><strong>Shipped</strong> &mdash; upgraded with MTP + flash attn</td>
-                        </tr>
-                        <tr>
-                            <td>Xavier tier (35B)</td>
-                            <td><strong>Shipped</strong> &mdash; with vision support</td>
-                        </tr>
-                        <tr>
-                            <td>V100 tier (REAP-28B)</td>
-                            <td><strong>Shipped</strong> &mdash; hardware + serving live</td>
-                        </tr>
-                        <tr>
-                            <td>Skills / presets (13 + library)</td>
-                            <td><strong>Shipped</strong> &mdash; deployed via script</td>
-                        </tr>
-                        <tr>
-                            <td>Google OAuth (ftu.edu.vn)</td>
-                            <td><strong>Shipped</strong></td>
-                        </tr>
-                        <tr>
-                            <td>Multi-LoRA serving (vLLM)</td>
-                            <td><strong>In progress</strong> &mdash; vLLM conversion done, adapter pipeline WIP</td>
-                        </tr>
-                        <tr>
-                            <td>RAG per department</td>
-                            <td><strong>Planned</strong> &mdash; document stores not yet built</td>
-                        </tr>
-                        <tr>
-                            <td>Training-as-a-Service UI</td>
-                            <td><strong>Planned</strong> &mdash; H100 training pipeline exists, UI does not</td>
-                        </tr>
-                        <tr>
-                            <td>LoRA hot-swap in production</td>
-                            <td><strong>Planned</strong> &mdash; requires vLLM migration on GPU tiers</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <p>
-                    The hardest remaining piece isn&rsquo;t technical &mdash; it&rsquo;s building the training data.
-                    A law LoRA needs curated Vietnamese legal corpora.
-                    A finance LoRA needs cleaned financial datasets.
-                    We&rsquo;re working with faculty from each department to assemble these,
-                    but data quality is the bottleneck, not compute.
-                </p>
-
-                <h2>Why Not Just Use an API?</h2>
-
-                <p>
-                    The obvious question: why build all this when you can just call OpenAI or Claude?
-                </p>
-
-                <ul>
-                    <li>
-                        <strong>Cost at scale</strong> &mdash; a university with thousands of students
-                        burning API tokens gets expensive fast.
-                        Our marginal cost per query is electricity.
-                    </li>
-                    <li>
-                        <strong>Data sovereignty</strong> &mdash; student conversations, research data,
-                        and department documents stay on campus infrastructure.
-                        No data leaves the network.
-                    </li>
-                    <li>
-                        <strong>Customization</strong> &mdash; you can&rsquo;t fine-tune GPT-4 on your legal corpus.
-                        You can fine-tune a 4B model on our H100 and deploy it in minutes.
-                    </li>
-                    <li>
-                        <strong>Education</strong> &mdash; the system <em>is</em> the curriculum.
-                        Students learn distributed systems, GPU programming, and ML ops
-                        by building and operating the infrastructure they use every day.
-                    </li>
-                </ul>
-
-                <p>
-                    We&rsquo;ll write more as the LoRA and training pieces come online.
-                    The cluster is live at <a href="https://swarm.ftds.online">swarm.ftds.online</a>.
-                    Source: <a href="https://github.com/ftulabs/cluster">ftulabs/cluster</a>.
-                </p>
 
             </article>
         </div>
