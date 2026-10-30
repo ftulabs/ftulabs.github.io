@@ -1,1 +1,106 @@
-[]
+[
+  {
+    "name": "Hoàng Lê Tuấn Minh",
+    "github": "tuanminhhoangle09-code",
+    "role": "K65, FTDS",
+    "bio": "Sinh viên K65",
+    "links": {}
+  },
+  {
+    "name": "Jjjjjjjjjjjjjjjjun",
+    "github": "Jjjjjjjjjjjjjjjjun",
+    "role": "K65, FTDS",
+    "bio": "Sinh viên K65",
+    "links": {}
+  },
+  {
+    "name": "Lê Mai Phương",
+    "github": "phuonglmylp",
+    "role": "K65, FTDS",
+    "bio": "heehe",
+    "links": {}
+  },
+  {
+    "name": "Lê Đoàn Minh Triết",
+    "github": "trietle2068",
+    "role": "K65, FTDS",
+    "bio": "Sinh viên K65",
+    "links": {}
+  },
+  {
+    "name": "Lưu Phú An",
+    "github": "luuphuan-code",
+    "role": "K65, FTDS",
+    "bio": "Đang học năm nhất tại Khoa Công Nghệ, Ngành trí tuệ nhân tạo trong kinh tế và kinh doanh, thành viên đội bóng rổ FTU Jayhawks",
+    "links": {
+      "Website": "https://luuphuan-code.com"
+    }
+  },
+  {
+    "name": "Ma Duy Kiên",
+    "github": "kientn234",
+    "role": "K65, FTDS",
+    "bio": "Sinh viên K65",
+    "links": {}
+  },
+  {
+    "name": "Mai Vương Minh",
+    "github": "Minhpro12345678910",
+    "role": "K65, sinh viên AI K65",
+    "bio": "Pro, top 1.",
+    "links": {}
+  },
+  {
+    "name": "Nguyễn Danh Huy",
+    "github": "RichardGithub8",
+    "role": "K65, FTDS",
+    "bio": "huy đẳng cấp vl damnnn",
+    "links": {
+      "Facebook": "https://www.facebook.com/nguyen.huy.708267"
+    }
+  },
+  {
+    "name": "Nguyễn Hoàng Hải",
+    "github": "GoopyMan",
+    "role": "K65, AI",
+    "bio": "1 K Corp ampule",
+    "links": {}
+  },
+  {
+    "name": "Nguyễn Việt Trí",
+    "github": "Aurelius1987-del",
+    "role": "K65, FTDS",
+    "bio": "Sinh viên K65 Trí tuệ nhân tạo",
+    "links": {}
+  },
+  {
+    "name": "Phạm Tiến Thành",
+    "github": "phamtienthanh-code",
+    "role": "K65, FTDS",
+    "bio": "Sinh viên K65",
+    "links": {}
+  },
+  {
+    "name": "Trần Trung Nhân",
+    "github": "nhansp",
+    "role": "K63, FTDS",
+    "bio": "Sinh viên K63 Khoa học máy tính",
+    "links": {
+      "Website": "https://nhansp.id.vn"
+    }
+  },
+  {
+    "name": "Đặng Bảo Minh",
+    "github": "6xm1r",
+    "role": "K65, FTDS",
+    "bio": "Sinh viên K65, đang tìm hiểu về phát triển phần mềm và công nghệ web.",
+    "links": {}
+  },
+  {
+    "name": "Đỗ Duy Lân",
+    "github": "duylan1",
+    "role": "K65, FTDS",
+    "bio": "Sinh viên K65",
+    "links": {}
+  }
+]
