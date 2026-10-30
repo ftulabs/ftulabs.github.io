@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "name": "bảo minh ngu",
+    "github": "bảo minh ngu",
+    "role": "K65, FTDS",
+    "bio": "Sinh viên K65",
+    "links": {
+      "Website": "https://github.com/phamtienthanh-code"
+    }
+  }
