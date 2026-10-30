@@ -2,7 +2,7 @@
 
 Static website for [FTU Labs](https://ftulabs.github.io), hosted on GitHub Pages.
 
----
+--- 
 
 ## Table of Contents
 
