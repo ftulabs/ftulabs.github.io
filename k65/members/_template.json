@@ -1,9 +1,9 @@
-{
-  "name": "Nguyễn Văn A",
-  "github": "your-github-username",
-  "role": "K65, FTDS",
-  "bio": "Một hai câu về bạn: đang học gì, thích gì, muốn làm gì.",
-  "links": {
-    "Website": "https://example.com"
+[
+  {
+    "name": "Phạm Tiến Thành",
+    "github": "phamtienthanh-code",
+    "role": "K65, FTDS",
+    "bio": "sở thích của tôi là",
+    "links": {hỏi làm gì}
   }
-}
+]
