@@ -775,6 +775,193 @@ $ source .venv/bin/activate
 
 <section class="slide" data-sec="venv">
     <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ which python</div>
+        <h2>Python nào đang chạy?</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>trước khi activate</span></div>
+<pre>$ which python3
+/usr/bin/python3
+$ python3 -c "import sys; print(sys.prefix)"
+/usr
+$ pip list | wc -l
+187        # đủ thứ đã cài từ năm nhất</pre>
+            </div>
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>sau khi activate</span></div>
+<pre>(.venv) $ which python
+~/k65/bai-tap/.venv/bin/python
+(.venv) $ python -c "import sys; print(sys.prefix)"
+~/k65/bai-tap/.venv
+(.venv) $ pip list | wc -l
+3          # sạch: chỉ pip + setuptools</pre>
+            </div>
+        </div>
+        <p class="small muted" style="margin-top:28px">Lỗi "ModuleNotFoundError" mà rõ ràng đã pip install? 90% là bạn cài vào một Python, chạy bằng một Python khác.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat windows.md</div>
+        <h2>Trên Windows</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>PowerShell</span></div>
+<pre>PS> py -3.12 -m venv .venv
+PS> .venv\Scripts\Activate.ps1
+(.venv) PS> pip install -r requirements.txt
+
+# nếu báo "running scripts is disabled":
+PS> Set-ExecutionPolicy -Scope CurrentUser RemoteSigned</pre>
+            </div>
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>cmd.exe</span></div>
+<pre>> py -m venv .venv
+> .venv\Scripts\activate.bat
+(.venv) > python --version
+Python 3.12.7</pre>
+            </div>
+        </div>
+        <p class="small muted" style="margin-top:28px">Dùng <code>py</code> launcher để chọn phiên bản. Hoặc dùng WSL và làm y như Linux.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat requirements.txt</div>
+        <h2>requirements.txt: ghim phiên bản</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>requirements.txt</span></div>
+<pre>numpy==2.1.3          # đúng bản này
+pandas>=2.2,&lt;3        # khoảng cho phép
+requests~=2.32        # 2.32.x
+matplotlib            # bản mới nhất (rủi ro)</pre>
+            </div>
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>(.venv) $ pip install numpy pandas
+(.venv) $ pip freeze > requirements.txt
+(.venv) $ pip install -r requirements.txt
+(.venv) $ pip install -U pandas   # nâng cấp
+(.venv) $ pip uninstall pandas</pre>
+            </div>
+        </div>
+        <p class="small muted" style="margin-top:28px">Nộp bài, gửi đồ án, deploy: luôn kèm requirements.txt để người chấm chạy được.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat uv.md</div>
+        <h2>uv: nhanh và gọn</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre># cài uv (Linux / macOS)
+$ curl -LsSf https://astral.sh/uv/install.sh | sh
+# Windows (PowerShell)
+PS> powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+$ uv init do-an && cd do-an
+$ uv add pandas matplotlib
+$ uv run main.py</pre>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:28px; padding-top:10px">
+                <p class="lede"><code>uv add</code> tự tạo .venv, ghi vào <b>pyproject.toml</b> và khóa phiên bản trong <b>uv.lock</b>.</p>
+                <p class="small muted">Người khác clone về chỉ cần <code>uv sync</code>. Cần Python khác? <code>uv python install 3.12</code>.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat conda.md</div>
+        <h2>conda: cho data science, ML</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>$ conda create -n ml python=3.12 -y
+$ conda activate ml
+(ml) $ conda install numpy pandas scikit-learn jupyter -y
+(ml) $ conda env export --from-history > environment.yml
+(ml) $ conda deactivate
+
+# máy khác:
+$ conda env create -f environment.yml
+$ conda env list            # xem các môi trường
+$ conda env remove -n ml    # xóa</pre>
+        </div>
+        <p class="small muted" style="margin-top:28px">Jupyter dùng đúng môi trường: <code>pip install ipykernel</code> rồi <code>python -m ipykernel install --user --name ml</code>.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat docker.md</div>
+        <h2>Docker: cô lập cả hệ điều hành</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>Dockerfile</span></div>
+<pre>FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["python", "main.py"]</pre>
+            </div>
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>$ docker build -t do-an .
+$ docker run --rm do-an
+
+# cần database cho đồ án?
+$ docker run -d --name pg -p 5432:5432 \
+    -e POSTGRES_PASSWORD=dev postgres:17</pre>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat .gitignore</div>
+        <h2>.gitignore và VS Code</h2>
+        <div class="cols c2-wide">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>.gitignore</span></div>
+<pre>.venv/
+venv/
+__pycache__/
+*.pyc
+.env            # mật khẩu, API key
+node_modules/
+.ipynb_checkpoints/</pre>
+            </div>
+            <img class="shot" src="../shcm-k65/res/vscode.png" alt="VS Code">
+        </div>
+        <p class="small muted" style="margin-top:24px">VS Code: Ctrl+Shift+P → <b>Python: Select Interpreter</b> → chọn <code>./.venv/bin/python</code>. Terminal mới sẽ tự activate.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat loi-thuong-gap.md</div>
+        <h2>Lỗi thường gặp</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>debug.md</span></div>
+<pre><span class="del">error: externally-managed-environment</span>  → Ubuntu/Debian chặn pip toàn cục: tạo .venv
+<span class="del">ModuleNotFoundError: No module named 'x'</span>  → chưa activate, hoặc VS Code chọn sai interpreter
+<span class="del">'python' is not recognized</span>  → Windows: dùng py, hoặc tick "Add to PATH" khi cài
+<span class="del">.venv chạy lỗi sau khi đổi tên thư mục</span>  → venv không di chuyển được: xóa và tạo lại</pre>
+        </div>
+        <p class="small muted" style="margin-top:28px">Hỏng thì cứ xóa: <code>rm -rf .venv</code>, tạo lại, <code>pip install -r requirements.txt</code>. Đó là lý do có requirements.txt.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
         <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ git diff thoi-quen.md</div>
         <h2>Thói quen tốt</h2>
         <div class="term">
@@ -868,6 +1055,146 @@ Tối ưu ảnh, lazy-load, chạy Lighthouse.</pre>
             </div>
             <p class="callout">Chỉ cài skill từ nguồn tin cậy và đọc trước: skill có thể chứa lệnh chạy trên máy bạn.</p>
         </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat tao-ai-studio.md</div>
+        <h2>Cách A · Google AI Studio</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>các bước</span></div>
+<pre>1. aistudio.google.com → Build
+2. Đính kèm resume.pdf
+3. Dán prompt khởi tạo (slide sau)
+4. Xem preview bên phải, sửa qua chat
+5. Save to GitHub, hoặc Download ZIP</pre>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:28px; padding-top:10px">
+                <p class="lede">Không cần cài gì, chỉ cần trình duyệt và tài khoản Google.</p>
+                <p class="small muted">Hợp với bạn chưa quen terminal. Nhược điểm: khó tùy biến sâu, code nằm trên web cho tới khi bạn đẩy về GitHub.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat tao-antigravity.md</div>
+        <h2>Cách B · Antigravity</h2>
+        <div class="cols c2-wide">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>các bước</span></div>
+<pre>1. Tạo thư mục trống my-portfolio/
+2. Bỏ resume.pdf và ảnh vào thư mục
+3. Mở thư mục trong Antigravity
+4. Mở Agent, dán prompt khởi tạo
+5. Đọc kế hoạch agent đưa ra → Approve
+6. Xem preview, chụp màn hình chỗ chưa ưng
+   gửi lại cho agent</pre>
+            </div>
+            <img class="shot" src="../shcm-k65/res/shots/antigravity.png" alt="Antigravity">
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat tao-claude-code.md</div>
+        <h2>Cách C · Claude Code</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>$ mkdir my-portfolio && cd my-portfolio
+$ cp ~/Downloads/resume.pdf ~/Pictures/avatar.jpg .
+$ claude
+
+> Đọc @resume.pdf và tạo portfolio một trang bằng HTML/CSS/JS thuần,
+  dùng @avatar.jpg làm ảnh đại diện. Xong thì chạy local server để mình xem.
+
+> Mở http://localhost:8000 trên màn 375px và sửa chỗ bị tràn ngang.</pre>
+        </div>
+        <p class="small muted" style="margin-top:24px">Xem thử không cần agent: <code>python3 -m http.server 8000</code> rồi mở localhost:8000.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat prompt-day-du.txt</div>
+        <h2>Prompt khởi tạo đầy đủ (copy được)</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>prompt-day-du.txt</span></div>
+<pre>Bạn là web designer. Từ CV đính kèm, tạo website portfolio một trang gồm:
+Hero (tên, chức danh, 1 câu giới thiệu, nút "Tải CV" và "Liên hệ"),
+About, Skills (nhóm theo loại), Projects (thẻ có ảnh, tag công nghệ, link),
+Experience (timeline), Education, Contact (email, LinkedIn, GitHub).
+Phong cách: tối giản, nền sáng, màu nhấn hồng pastel, tiêu đề font serif.
+Yêu cầu: responsive, có dark mode, SEO cơ bản (title, meta description,
+Open Graph). Chỉ dùng thông tin có trong CV, chỗ nào thiếu thì để [TODO].</pre>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat prompt-du-an.txt</div>
+        <h2>Viết mô tả dự án cho ra hồn</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>prompt</span></div>
+<pre>Viết lại mỗi dự án trong mục Projects
+theo cấu trúc:
+- Vấn đề: 1 câu
+- Giải pháp: 1-2 câu, nêu công nghệ
+- Kết quả: con số cụ thể nếu CV có
+Tối đa 50 từ mỗi dự án.</pre>
+            </div>
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>trước → sau</span></div>
+<pre><span class="del">- Làm web bán hàng bằng React</span>
+<span class="add">+ Vấn đề: shop của CLB ghi đơn bằng Excel.</span><span class="add">+ Giải pháp: web React + Firebase, giỏ hàng,</span><span class="add">  thanh toán QR.</span><span class="add">+ Kết quả: 300 đơn trong tuần mở bán.</span></pre>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat prompt-nang-cap.txt</div>
+        <h2>Prompt nâng cấp từng bước</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>mỗi lần gửi một dòng</span></div>
+<pre>Thêm hiệu ứng xuất hiện nhẹ khi cuộn, tắt khi người dùng bật reduce-motion.
+Thêm nút chuyển Tiếng Việt / English, nhớ lựa chọn bằng localStorage.
+Ảnh: chuyển sang WebP, thêm width/height và loading="lazy".
+Chạy Lighthouse, sửa đến khi Performance, SEO, Accessibility đều trên 90.
+Thêm favicon từ chữ cái đầu tên mình và ảnh Open Graph 1200×630.
+Kiểm tra tương phản màu chữ ở cả light và dark mode.</pre>
+        </div>
+        <p class="small muted" style="margin-top:24px">Sau mỗi thay đổi ổn: <code>git commit</code>. Agent làm hỏng thì quay lại được.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat github-pages.md</div>
+        <h2>GitHub Pages từng bước</h2>
+        <div class="cols c2-wide">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>$ git init -b main
+$ git add .
+$ git commit -m "feat: portfolio v1"
+$ gh repo create portfolio --public \
+    --source . --push
+$ gh api -X POST repos/{owner}/portfolio/pages \
+    -f "source[branch]=main" -f "source[path]=/"
+# vài phút sau:
+# https://&lt;username&gt;.github.io/portfolio</pre>
+            </div>
+            <img class="shot" src="../shcm-k65/res/shots/ftulabs-home.png" alt="ftulabs.github.io">
+        </div>
+        <p class="small muted" style="margin-top:20px">Muốn link gọn <b>username.github.io</b>? Đặt tên repo đúng là <code>&lt;username&gt;.github.io</code>.</p>
     </div>
 </section>
 
@@ -968,6 +1295,95 @@ $ gemarena submit</pre>
 23.12   Chốt top 8 bảng 1v1, chạy chung kết</pre>
         </div>
         <p class="small muted" style="margin-top:28px">Mẹo: nộp bản cuối sớm vài giờ. Giải thưởng và luật chi tiết xem trên trang giải.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat tai-sao.md</div>
+        <h2>Vì sao nên tham gia?</h2>
+        <div class="cols c3">
+            <div><p class="lede"><b>Luyện Python thật</b></p><p class="small muted">Đọc trạng thái game, sinh nước đi hợp lệ, xử lý lỗi: code chạy thật trên máy chủ, không phải bài tập chấm tay.</p></div>
+            <div><p class="lede"><b>Tư duy thuật toán</b></p><p class="small muted">Tham lam, heuristic, tìm kiếm cây trò chơi, mô phỏng. Bắt đầu đơn giản, nâng dần.</p></div>
+            <div><p class="lede"><b>Vào portfolio</b></p><p class="small muted">Thứ hạng ladder và repo bot là một dự án đáng ghi vào portfolio ở Phần 2.</p></div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat chien-thuat.md</div>
+        <h2>Từ bot ngây thơ tới bot mạnh</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>lo-trinh.md</span></div>
+<pre>v0  Chọn ngẫu nhiên một nước hợp lệ        → chạy được, nộp được
+v1  Tham lam: mua được thẻ điểm cao thì mua  → thắng Boss Dễ
+v2  Chấm điểm mỗi nước bằng heuristic:
+    điểm + giá trị ưu đãi + tiến độ tới Quý nhân − đá bị thừa
+v3  Nhìn trước 1-2 nước, đoán nước đối thủ
+v4  Mô phỏng nhiều ván (Monte Carlo) để chọn nước tốt nhất</pre>
+        </div>
+        <p class="small muted" style="margin-top:24px">Mỗi phiên bản: đấu Boss trên máy mình trước, thắng nhiều hơn bản cũ mới nộp.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat bot_minh_hoa.py</div>
+        <h2>Khung bot (minh họa)</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>bot_minh_hoa.py</span></div>
+<pre>import random
+
+def score(move, state):
+    """Heuristic: càng cao càng tốt. Tự thiết kế phần này."""
+    s = 0
+    s += 3 * move_points(move, state)      # điểm có ngay
+    s += 1 * bonus_value(move, state)      # ưu đãi giảm giá về sau
+    s -= 2 * wasted_gems(move, state)      # vượt quá 10 viên
+    return s
+
+def choose(state, legal_moves):
+    if not legal_moves:
+        return None
+    best = max(score(m, state) for m in legal_moves)
+    return random.choice([m for m in legal_moves if score(m, state) == best])</pre>
+        </div>
+        <p class="small muted" style="margin-top:20px">Đây là pseudo-code để nói ý tưởng. Tên hàm và cấu trúc state thật nằm trong bot mẫu của SDK.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat quy-trinh.md</div>
+        <h2>Quy trình làm bot gọn gàng</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>$ mkdir gem-bot && cd gem-bot
+$ python3 -m venv .venv && source .venv/bin/activate   # Phần 1
+$ git init -b main && echo ".venv/" > .gitignore        # SHCM 1
+# cài SDK và tạo bot mẫu theo hướng dẫn trên trang giải
+$ git add . && git commit -m "bot v0: random"
+# sửa → đấu Boss → thắng hơn bản cũ?
+$ git commit -am "bot v1: greedy"
+$ gemarena submit</pre>
+        </div>
+        <p class="small muted" style="margin-top:20px">Ba buổi gộp lại: venv giữ môi trường sạch, Git giữ lịch sử, portfolio khoe kết quả.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat luat-choi-dep.md</div>
+        <h2>Liêm chính và lưu ý</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>nen-va-khong.md</span></div>
+<pre><span class="add">+ Tự viết bot, dùng AI để hỏi và học</span><span class="add">+ Đọc điều khoản trên trang giải</span><span class="add">+ Có vấn đề thì gửi khiếu nại qua trang</span>
+<span class="del">- Nộp bot của người khác</span><span class="del">- Khai thác lỗi máy chủ</span><span class="del">- Để sát hạn mới nộp</span></pre>
+            </div>
+            <p class="callout">Bot bị đóng băng sau 23:59 ngày 22/12. Nộp bản cuối sớm vài giờ.</p>
+        </div>
     </div>
 </section>
 
