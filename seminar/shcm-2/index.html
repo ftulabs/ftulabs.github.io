@@ -693,6 +693,47 @@ ul.plain.tight code { font-size: 22px; }
     .slide { position: relative; opacity: 1; visibility: visible; page-break-after: always; width: 1920px; height: 1080px; }
     .progress { display: none; }
 }
+
+/* ---- SHCM 2 entrance animations ---- */
+@media (prefers-reduced-motion: no-preference) {
+    .slide.is-active .content > h2,
+    .slide.is-active .content > .lede,
+    .slide.is-active .content > .term,
+    .slide.is-active .content > .cols > *,
+    .slide.is-active .content > p.small,
+    .slide.is-active .cols.c3 > div { animation: rise .55s cubic-bezier(.2,.7,.2,1) both; }
+    .slide.is-active .content > h2 { animation-delay: .05s; }
+    .slide.is-active .content > .cols > *:nth-child(1) { animation-delay: .2s; }
+    .slide.is-active .content > .cols > *:nth-child(2) { animation-delay: .38s; }
+    .slide.is-active .content > .cols > *:nth-child(3) { animation-delay: .56s; }
+    .slide.is-active .content > .term { animation-delay: .2s; }
+    .slide.is-active .content > p.small { animation-delay: .8s; }
+    .slide.is-active pre > span.add,
+    .slide.is-active pre > span.del { animation: type-in .35s ease both; }
+    .slide.is-active pre > span:nth-of-type(1) { animation-delay: 0.59s; }
+    .slide.is-active pre > span:nth-of-type(2) { animation-delay: 0.73s; }
+    .slide.is-active pre > span:nth-of-type(3) { animation-delay: 0.87s; }
+    .slide.is-active pre > span:nth-of-type(4) { animation-delay: 1.01s; }
+    .slide.is-active pre > span:nth-of-type(5) { animation-delay: 1.15s; }
+    .slide.is-active pre > span:nth-of-type(6) { animation-delay: 1.29s; }
+    .slide.is-active pre > span:nth-of-type(7) { animation-delay: 1.43s; }
+    .slide.is-active pre > span:nth-of-type(8) { animation-delay: 1.57s; }
+    .slide.is-active pre > span:nth-of-type(9) { animation-delay: 1.71s; }
+    .slide.is-active pre > span:nth-of-type(10) { animation-delay: 1.85s; }
+    .slide.is-active pre > span:nth-of-type(11) { animation-delay: 1.99s; }
+    .slide.is-active .callout { animation: rise .6s ease .6s both, nudge 1.2s ease 1.3s 1; }
+    .slide.divider.is-active h2 { animation: rise .7s cubic-bezier(.2,.7,.2,1) .1s both; }
+    .slide.divider.is-active .sec-list { animation: rise .6s ease .45s both; }
+    .slide.is-active .gem-spin { transform-origin: 1440px 540px; animation: spin 40s linear infinite; }
+    .slide.is-active .float { animation: float 3.2s ease-in-out infinite alternate; animation-delay: var(--d, 0s); }
+    .slide.is-active .shot { animation: rise .7s ease .35s both; }
+}
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes type-in { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+@keyframes nudge { 30% { transform: translateX(8px); } 60% { transform: translateX(-4px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes float { from { transform: translateY(-10px); } to { transform: translateY(10px); } }
+pre > span.add, pre > span.del { display: block; }
 </style>
 </head>
 <body>
@@ -700,6 +741,29 @@ ul.plain.tight code { font-size: 22px; }
 <main class="deck" id="deck">
 
 <section class="slide cover" data-sec="intro" data-quiet>
+<div class="decor"><svg viewBox="0 0 1920 1080" aria-hidden="true">
+  <g fill="none" stroke-width="1.5">
+    <circle class="draw" style="--len:2765" cx="1390" cy="500" r="440" stroke="#C9CED4" stroke-dasharray="6 8"/>
+    <circle class="draw" style="--len:1760;--d:.3s" cx="1390" cy="500" r="280" stroke="var(--ink)"/>
+    <circle class="draw" style="--len:754;--d:.6s" cx="1390" cy="500" r="120" stroke="var(--green)" stroke-width="2.5"/>
+    <line x1="900" y1="500" x2="1880" y2="500" stroke="#DCE0E4"/><line x1="1390" y1="40" x2="1390" y2="1000" stroke="#DCE0E4"/>
+    <line class="draw" style="--len:280;--d:1s" x1="1390" y1="500" x2="1638" y2="370" stroke="var(--orange)" stroke-width="2"/>
+  </g>
+  <g class="pop" style="--d:1.3s" font-family="Google Sans Code, monospace">
+    <text x="1400" y="372" font-size="18" fill="#9AA1AA">venv</text>
+    <text x="1400" y="212" font-size="18" fill="#9AA1AA">portfolio</text>
+    <text x="1745" y="800" font-size="18" fill="#9AA1AA">gem-arena</text>
+    <circle cx="1638" cy="370" r="6" fill="var(--orange)"/><text x="1652" y="362" font-size="22" fill="#E8710A">#2</text>
+  </g>
+  <text class="pop" style="--d:.9s" x="1390" y="514" font-size="40" fill="var(--green)" text-anchor="middle" font-family="Google Sans Code, monospace">(.venv)</text>
+  <g font-family="Google Sans Code, monospace" fill="#B9BFC6"><text x="1000" y="300" font-size="28">pip</text><text x="1000" y="150" font-size="28">&lt;/&gt;</text>
+    <text x="960" y="990" font-size="24">$ gemarena submit</text><text x="1700" y="250" font-size="22">.github.io</text></g>
+  <g class="pop float" style="--d:1.6s"><polygon points="1690,600 1730,570 1770,600 1730,660" fill="#fff" stroke="var(--green)" stroke-width="2.5"/>
+    <polyline points="1690,600 1770,600" fill="none" stroke="var(--green)" stroke-width="1.5"/></g>
+  <g class="pop float" style="--d:1.8s"><image href="../shcm-k65/res/Octicons-mark-github.svg" x="1110" y="610" width="64" height="64"/></g>
+  <g class="pop float" style="--d:2s"><image href="../shcm-k65/res/claude-code.svg" x="1560" y="140" width="60" height="60"/></g>
+</svg></div>
+
     <div class="content">
         <div class="sec-no">Sinh hoạt chuyên môn #2 · K65 · FTU Labs</div>
         <h1>venv, Portfolio, Đá Quý</h1>
@@ -710,6 +774,8 @@ ul.plain.tight code { font-size: 22px; }
 
 <!-- ===================== PHẦN 1: VIRTUAL ENVIRONMENTS ===================== -->
 <section class="slide divider" data-sec="venv">
+<div class="decor"><svg viewBox="0 0 1920 1080" aria-hidden="true"><rect class="draw" style="--len:2640;--d:0s" x="1120" y="200" width="640" height="680" rx="14" fill="none" stroke="#9AA1AA" stroke-width="2"/><text class="pop" style="--d:0.6s" x="1140" y="240" font-size="22" fill="#9AA1AA" font-family="Google Sans Code, monospace">~/k65 (máy bạn)</text><rect class="draw" style="--len:1560;--d:0.4s" x="1170" y="300" width="260" height="520" rx="14" fill="none" stroke="var(--green)" stroke-width="2"/><text class="pop" style="--d:1.0s" x="1190" y="340" font-size="22" fill="var(--green)" font-family="Google Sans Code, monospace">do-an/.venv</text><rect class="draw" style="--len:1560;--d:0.6s" x="1460" y="300" width="260" height="520" rx="14" fill="none" stroke="var(--orange)" stroke-width="2"/><text class="pop" style="--d:1.2s" x="1480" y="340" font-size="22" fill="var(--orange)" font-family="Google Sans Code, monospace">ml/.venv</text><text class="pop" style="--d:1.20s" x="1195" y="400" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">python 3.12</text><text class="pop" style="--d:1.35s" x="1195" y="460" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">numpy 1.26</text><text class="pop" style="--d:1.50s" x="1195" y="520" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">flask 3.0</text><text class="pop" style="--d:1.65s" x="1195" y="580" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">requests</text><text class="pop" style="--d:1.30s" x="1485" y="400" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">python 3.11</text><text class="pop" style="--d:1.45s" x="1485" y="460" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">numpy 2.1</text><text class="pop" style="--d:1.60s" x="1485" y="520" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">torch 2.5</text><text class="pop" style="--d:1.75s" x="1485" y="580" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">jupyter</text></svg></div>
+
     <div class="content">
         <div class="sec-no">Phần 1 / 3</div>
         <h2>Virtual Environments</h2>
@@ -974,6 +1040,8 @@ node_modules/
 
 <!-- ===================== PHẦN 2: PORTFOLIO VỚI AI ===================== -->
 <section class="slide divider" data-sec="portfolio">
+<div class="decor"><svg viewBox="0 0 1920 1080" aria-hidden="true"><rect class="draw" style="--len:1280" x="1500" y="240" width="300" height="340" rx="8" fill="none" stroke="#9AA1AA" stroke-width="2"/><text class="pop" style="--d:.6s" x="1520" y="280" font-size="20" fill="#9AA1AA" font-family="Google Sans Code, monospace">resume.pdf</text><line class="draw" style="--len:220;--d:0.5s" x1="1530" y1="320" x2="1760" y2="320" stroke="#C9CED4" stroke-width="6"/><line class="draw" style="--len:220;--d:0.6s" x1="1530" y1="360" x2="1720" y2="360" stroke="#C9CED4" stroke-width="6"/><line class="draw" style="--len:220;--d:0.7s" x1="1530" y1="400" x2="1680" y2="400" stroke="#C9CED4" stroke-width="6"/><line class="draw" style="--len:220;--d:0.8s" x1="1530" y1="440" x2="1760" y2="440" stroke="#C9CED4" stroke-width="6"/><line class="draw" style="--len:220;--d:0.9s" x1="1530" y1="480" x2="1720" y2="480" stroke="#C9CED4" stroke-width="6"/><line class="draw" style="--len:220;--d:1.0s" x1="1530" y1="520" x2="1680" y2="520" stroke="#C9CED4" stroke-width="6"/><path class="draw" style="--len:300;--d:1s" d="M1650 600 C 1650 680, 1500 660, 1440 720" fill="none" stroke="var(--orange)" stroke-width="2.5" stroke-dasharray="8 6"/><rect class="draw" style="--len:1900;--d:1.3s" x="1040" y="720" width="560" height="280" rx="14" fill="none" stroke="var(--ink)" stroke-width="2"/><circle class="pop" style="--d:1.9s" cx="1070" cy="748" r="7" fill="var(--red)"/><circle class="pop" style="--d:2s" cx="1094" cy="748" r="7" fill="var(--orange)"/><circle class="pop" style="--d:2.1s" cx="1118" cy="748" r="7" fill="var(--green)"/><text class="pop" style="--d:2.2s" x="1150" y="755" font-size="18" fill="#9AA1AA" font-family="Google Sans Code, monospace">you.github.io</text><text class="pop" style="--d:2.4s" x="1080" y="840" font-size="40" fill="var(--ink)" font-family="Google Sans Flex, sans-serif" font-weight="600">Xin chào, mình là …</text><rect class="pop" style="--d:2.6s" x="1080" y="880" width="150" height="44" rx="22" fill="var(--green)"/><text class="pop" style="--d:2.6s" x="1110" y="909" font-size="18" fill="#fff" font-family="Google Sans Code, monospace">Tải CV</text></svg></div>
+
     <div class="content">
         <div class="sec-no">Phần 2 / 3</div>
         <h2>Portfolio Online với AI</h2>
@@ -1228,6 +1296,8 @@ $ npx netlify deploy --prod      # → ten-ban.netlify.app</pre>
 
 <!-- ===================== PHẦN 3: ĐẤU TRƯỜNG ĐÁ QUÝ ===================== -->
 <section class="slide divider" data-sec="gem">
+<div class="decor"><svg viewBox="0 0 1920 1080" aria-hidden="true"><g class="gem-spin"><polygon class="draw" style="--len:1500" points="1440,200 1700,400 1440,880 1180,400" fill="none" stroke="var(--green)" stroke-width="2.5"/><polyline class="draw" style="--len:900;--d:.5s" points="1180,400 1300,300 1440,400 1580,300 1700,400" fill="none" stroke="var(--ink)" stroke-width="1.5"/><line class="draw" style="--len:520;--d:.8s" x1="1180" y1="400" x2="1700" y2="400" stroke="var(--ink)" stroke-width="1.5"/><polyline class="draw" style="--len:1000;--d:1s" points="1300,400 1440,880 1580,400" fill="none" stroke="#C9CED4" stroke-width="1.5"/><line class="draw" style="--len:300;--d:1.1s" x1="1440" y1="200" x2="1440" y2="400" stroke="#C9CED4"/></g><circle class="pop float" style="--d:1.4s" cx="1120" cy="780" r="16" fill="var(--red)"/><circle class="pop float" style="--d:1.6s" cx="1780" cy="700" r="16" fill="var(--green)"/><circle class="pop float" style="--d:1.8s" cx="1760" cy="220" r="16" fill="var(--orange)"/><circle class="pop float" style="--d:2.0s" cx="1130" cy="220" r="16" fill="#4285F4"/><circle class="pop float" style="--d:2.2s" cx="1300" cy="960" r="16" fill="var(--ink)"/></svg></div>
+
     <div class="content">
         <div class="sec-no">Phần 3 / 3</div>
         <h2>Đấu Trường Đá Quý</h2>
