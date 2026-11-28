@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sinh hoạt chuyên môn #2: venv, Portfolio, Đấu Trường Đá Quý</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wdth,wght@6..144,25..151,1..1000&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@300..800&display=swap">
+<style>
+:root {
+    --paper: #FFFFFF;
+    --ink: #1E2226;
+    --graphite: #59606A;
+    --gray: #9AA1AA;
+    --rule: #DCE0E4;
+    --faint: #F2F4F6;
+    --green: #1E8E3E;
+    --green-soft: #E8F4EC;
+    --red: #D93025;
+    --red-soft: #FCECEA;
+    --orange: #E8710A;
+    --orange-soft: #FEF1E6;
+
+    --f-head: "Google Sans Flex", "Adwaita Sans", system-ui, sans-serif;
+    --f-body: "Adwaita Sans", "Google Sans Flex", system-ui, sans-serif;
+    --f-code: "Google Sans Code", "Adwaita Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    height: 100%;
+    background: #E9ECEF;
+    overflow: hidden;
+    color: var(--ink);
+    font-family: var(--f-body);
+}
+
+/* ---------- stage ---------- */
+.deck {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 1920px; height: 1080px;
+    transform-origin: center center;
+}
+
+.slide {
+    position: absolute;
+    inset: 0;
+    background-color: var(--paper);
+    background-image:
+        linear-gradient(to right, #E9ECEF 1px, transparent 1px),
+        linear-gradient(to bottom, #E9ECEF 1px, transparent 1px),
+        linear-gradient(to right, #F5F6F8 1px, transparent 1px),
+        linear-gradient(to bottom, #F5F6F8 1px, transparent 1px);
+    background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+    background-position: 60px 60px;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .18s ease, visibility 0s linear .18s;
+}
+.slide.is-active {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity .18s ease;
+}
+
+/* drafting frame */
+.frame {
+    position: absolute;
+    inset: 60px;
+    border: 1.5px solid var(--ink);
+    pointer-events: none;
+    z-index: 3;
+}
+.frame::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 1px solid var(--rule);
+}
+.ruler-x, .ruler-y {
+    position: absolute;
+    z-index: 3;
+    pointer-events: none;
+}
+.ruler-x {
+    left: 60px; right: 60px; top: 36px; height: 24px;
+    background:
+        linear-gradient(to right, var(--gray) 1px, transparent 1px) 0 100% / 120px 24px no-repeat repeat,
+        linear-gradient(to right, var(--gray) 1px, transparent 1px) 0 100% / 24px 10px repeat-x;
+    background-repeat: repeat-x;
+}
+.ruler-y {
+    top: 60px; bottom: 60px; left: 36px; width: 24px;
+    background:
+        linear-gradient(to bottom, var(--gray) 1px, transparent 1px) 100% 0 / 24px 120px repeat-y,
+        linear-gradient(to bottom, var(--gray) 1px, transparent 1px) 100% 0 / 10px 24px repeat-y;
+}
+.reg {
+    position: absolute;
+    width: 36px; height: 36px;
+    z-index: 3;
+    pointer-events: none;
+}
+.reg::before, .reg::after {
+    content: "";
+    position: absolute;
+    background: var(--ink);
+}
+.reg::before { left: 17px; top: 0; width: 1.5px; height: 36px; }
+.reg::after { top: 17px; left: 0; height: 1.5px; width: 36px; }
+.reg.tl { left: 42px; top: 42px; }
+.reg.tr { right: 42px; top: 42px; }
+.reg.bl { left: 42px; bottom: 42px; }
+.reg.br { right: 42px; bottom: 42px; }
+
+/* decoration layer */
+.decor {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+.decor svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.glyph {
+    position: absolute;
+    font-family: var(--f-code);
+    color: #B9BFC6;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+/* title block (drawing sheet info) */
+.titleblock {
+    position: absolute;
+    right: 60px; bottom: 60px;
+    padding: 12px 22px 11px;
+    border-top: 1.5px solid var(--ink);
+    border-left: 1.5px solid var(--ink);
+    background: var(--paper);
+    z-index: 4;
+    font-family: var(--f-head);
+    font-weight: 560;
+    font-size: 19px;
+    color: var(--ink);
+}
+.titleblock .tb-dot { color: var(--orange); margin: 0 10px; }
+.titleblock .tb-sheet { font-family: var(--f-code); font-weight: 500; color: var(--graphite); }
+
+/* ---------- content ---------- */
+.content {
+    position: absolute;
+    left: 150px; right: 150px;
+    top: 132px; bottom: 170px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+}
+
+.path {
+    font-family: var(--f-code);
+    font-size: 22px;
+    color: var(--graphite);
+    margin-bottom: 18px;
+}
+.path .p-user { color: var(--green); }
+.path .p-dir { color: var(--orange); }
+
+h1, h2, h3 {
+    font-family: var(--f-head);
+    font-weight: 640;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+}
+h2 {
+    font-size: 76px;
+    font-variation-settings: "wdth" 88, "opsz" 72;
+    margin-bottom: 44px;
+    max-width: 28ch;
+}
+h3 {
+    font-size: 34px;
+    font-variation-settings: "wdth" 92;
+    margin-bottom: 14px;
+}
+
+p, li { font-size: 30px; line-height: 1.45; }
+.lede { font-size: 36px; line-height: 1.4; max-width: 32ch; color: var(--ink); }
+.muted { color: var(--graphite); }
+.small { font-size: 24px; line-height: 1.45; }
+
+code, .code {
+    font-family: var(--f-code);
+    font-size: .88em;
+}
+p code, li code, td code {
+    background: var(--faint);
+    border: 1px solid var(--rule);
+    padding: 1px 8px;
+    border-radius: 4px;
+}
+
+.g { color: var(--green); }
+.r { color: var(--red); }
+.o { color: var(--orange); }
+
+ul.plain { list-style: none; }
+ul.plain li { position: relative; padding-left: 44px; margin-bottom: 14px; }
+ul.plain li::before {
+    content: "";
+    position: absolute;
+    left: 4px; top: .5em;
+    width: 16px; height: 16px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+}
+ul.plain.green li::before { border-color: var(--green); }
+
+.cols { display: grid; gap: 80px; flex: 1; min-height: 0; }
+.cols.c2 { grid-template-columns: 1fr 1fr; }
+.cols.c2-wide { grid-template-columns: 1.1fr 1fr; }
+.cols.c3 { grid-template-columns: repeat(3, 1fr); gap: 56px; }
+
+/* terminal / code sheet */
+.term {
+    font-family: var(--f-code);
+    font-size: 26px;
+    line-height: 1.6;
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    position: relative;
+    align-self: start;
+}
+.term .t-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--rule);
+    font-size: 18px;
+    color: var(--graphite);
+}
+.term .t-head i {
+    width: 12px; height: 12px;
+    border: 1.5px solid var(--gray);
+    border-radius: 50%;
+}
+.term .t-head span { margin-left: 8px; }
+.term pre {
+    font-family: inherit;
+    padding: 18px 24px;
+    white-space: pre;
+}
+.term .c { color: var(--gray); }
+.term .pr { color: var(--green); }
+.term .add { color: var(--green); background: var(--green-soft); display: block; margin: 0 -24px; padding: 0 24px; }
+.term .del { color: var(--red); background: var(--red-soft); display: block; margin: 0 -24px; padding: 0 24px; }
+.term .hl { color: var(--orange); }
+
+/* tables */
+table.spec {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 27px;
+}
+table.spec th {
+    text-align: left;
+    font-family: var(--f-head);
+    font-weight: 500;
+    font-size: 21px;
+    color: var(--graphite);
+    padding: 0 18px 12px 0;
+    border-bottom: 1.5px solid var(--ink);
+}
+table.spec td {
+    padding: 15px 18px 15px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    line-height: 1.35;
+}
+table.spec td:first-child {
+    font-family: var(--f-head);
+    font-weight: 600;
+    font-size: 30px;
+    white-space: nowrap;
+}
+table.spec kbd {
+    font-family: var(--f-code);
+    font-size: 23px;
+    border: 1.5px solid var(--ink);
+    border-bottom-width: 3px;
+    border-radius: 6px;
+    padding: 1px 9px;
+    background: var(--paper);
+    white-space: nowrap;
+}
+
+/* svg diagrams */
+svg.dia { overflow: visible; }
+svg.dia text:not([font-family]) { font-family: var(--f-body); }
+svg.dia text:not([fill]) { fill: var(--ink); }
+svg.dia .mono { font-family: var(--f-code); }
+svg.dia .lbl { font-size: 24px; }
+svg.dia .sm { font-size: 19px; fill: var(--graphite); }
+svg.dia .ann { fill: var(--orange); font-size: 21px; font-family: var(--f-code); }
+
+/* section divider */
+.slide.divider .content { justify-content: center; }
+.divider .sec-no {
+    font-family: var(--f-code);
+    font-size: 30px;
+    color: var(--orange);
+    margin-bottom: 20px;
+}
+.divider h2 {
+    font-size: 180px;
+    font-weight: 700;
+    font-variation-settings: "wdth" 75, "opsz" 144;
+    letter-spacing: -0.03em;
+    line-height: .92;
+    margin-bottom: 36px;
+}
+.divider .sec-list {
+    font-family: var(--f-code);
+    font-size: 28px;
+    color: var(--graphite);
+    line-height: 1.7;
+}
+.divider .sec-list span { color: var(--gray); }
+
+/* title slide */
+.cover .content { top: 150px; }
+.cover .logos { display: flex; align-items: center; gap: 22px; margin-bottom: 40px; }
+.cover .logos img.ctas { height: 64px; }
+.cover .logos img.ftu { height: 72px; }
+.cover h1 {
+    font-size: 100px;
+    font-weight: 720;
+    font-variation-settings: "wdth" 72, "opsz" 144;
+    letter-spacing: -0.035em;
+    line-height: .92;
+    max-width: 10ch;
+}
+.cover .sub {
+    margin-top: 26px;
+    font-family: var(--f-code);
+    font-size: 30px;
+    color: var(--graphite);
+}
+.cover .sub b { color: var(--ink); font-weight: 500; }
+.people {
+    margin-top: auto;
+    padding-top: 28px;
+    display: grid;
+    grid-template-columns: repeat(4, 214px);
+    gap: 18px;
+}
+.person { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.person .p-name { font-size: 20px; white-space: nowrap; line-height: 1.25; margin-top: 10px; }
+.people code { color: var(--green); font-size: 17px; }
+.people small { font-size: 16px; color: var(--gray); line-height: 1.3; }
+/* avatar: initials until res/people/<id>.jpg exists */
+.avatar {
+    position: relative; width: 112px; height: 112px; border-radius: 50%;
+    display: grid; place-items: center; overflow: hidden;
+    background: var(--faint); border: 1.5px solid var(--rule);
+}
+.avatar b { font: 600 30px var(--f-code); color: var(--graphite); }
+.avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* ring dividers: start colored, then rings outside the section fade to gray */
+@media (prefers-reduced-motion: no-preference) {
+    .slide.is-active .dim { animation: dim .8s ease .9s both; }
+    .slide.is-active .fade-out { animation: fade-out .8s ease .9s both; }
+    .slide.is-active .fade-in { animation: fade-in .8s ease .9s both; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .dim { filter: grayscale(1) opacity(.35); }
+    .fade-out { opacity: 0; }
+}
+@keyframes dim { from { filter: none; } to { filter: grayscale(1) opacity(.35); } }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* cover tool logos: fade gray <-> original color, rippling around the rings */
+.cover .tool { filter: grayscale(1) opacity(.55); }
+.cover g:hover > .tool { filter: none; }
+@media (prefers-reduced-motion: no-preference) {
+    .slide.is-active .tool {
+        animation: tint 2.4s ease-in-out infinite alternate;
+        animation-delay: calc(3s + var(--i) * .18s);
+    }
+}
+@keyframes tint {
+    0%, 15% { filter: grayscale(1) opacity(.55); }
+    85%, 100% { filter: grayscale(0) opacity(1); }
+}
+
+/* draw-on for cover construction */
+@media (prefers-reduced-motion: no-preference) {
+    .slide.is-active .draw {
+        stroke-dasharray: var(--len);
+        stroke-dashoffset: var(--len);
+        animation: draw 1.6s cubic-bezier(.6,0,.2,1) forwards;
+        animation-delay: var(--d, 0s);
+    }
+    .slide.is-active .pop {
+        opacity: 0;
+        animation: pop .4s ease forwards;
+        animation-delay: var(--d, 0s);
+    }
+}
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes pop { to { opacity: 1; } }
+
+/* easter egg: beach party, slide 2 */
+.egg { position: absolute; left: 150px; bottom: 78px; z-index: 2; }
+@media (prefers-reduced-motion: no-preference) {
+    .slide.is-active .egg .think circle { animation: think 1.4s ease-in-out infinite; }
+    .slide.is-active .egg .think circle:nth-child(2) { animation-delay: .2s; }
+    .slide.is-active .egg .think circle:nth-child(3) { animation-delay: .4s; }
+}
+@keyframes think { 0%, 60%, 100% { opacity: .2; } 30% { opacity: 1; } }
+
+/* paged screenshot slides: icon tiles on the left light up for the page on screen */
+.ide-icons { display: grid; grid-template-columns: repeat(3, 108px); gap: 18px; margin-top: 44px; align-items: center; }
+.ico {
+    width: 108px; height: 108px;
+    display: grid; place-items: center;
+    border: 1.5px dashed var(--rule);
+    background: var(--paper);
+    padding: 0;
+    cursor: pointer;
+    transition: border-color .3s;
+}
+.ico img { width: 62px; height: 62px; object-fit: contain; filter: grayscale(1) opacity(.35); transition: filter .3s; }
+.ico .nano-t { font: 700 26px var(--f-code); color: #7c00cd; filter: grayscale(1) opacity(.35); transition: filter .3s; }
+.ico.on { border: 2px solid var(--ink); }
+.ico.on img, .ico.on .nano-t { filter: none; }
+.ico-more { font: 500 34px var(--f-code); color: var(--gray); padding-left: 10px; }
+.pages { position: relative; }
+.page { display: none; grid-template-columns: 1fr 1fr; gap: 40px; }
+.page.is-on { display: grid; }
+@media (prefers-reduced-motion: no-preference) {
+    .page.is-on .shot-card { animation: page-in .35s ease both; }
+    .page.is-on .shot-card + .shot-card { animation-delay: .06s; }
+}
+@keyframes page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.shot-card { margin: 0; }
+.shot-card img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    object-position: left top;
+    border: 1.5px solid var(--ink);
+    background: var(--faint);
+}
+.shot-card figcaption { margin-top: 16px; display: flex; flex-direction: column; gap: 4px; }
+.shot-card b { font-family: var(--f-head); font-weight: 640; font-size: 36px; }
+.shot-card span { font-size: 24px; line-height: 1.35; color: var(--graphite); }
+.pager { display: flex; align-items: center; gap: 10px; margin-top: 34px; }
+.pager i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--gray); }
+.pager i.on { background: var(--orange); border-color: var(--orange); }
+.pager span { margin-left: 8px; font: 500 20px var(--f-code); color: var(--graphite); }
+.quit-vim .qv, .more-card .qv {
+    aspect-ratio: 1 / 1;
+    border: 1.5px dashed var(--orange);
+    padding: 32px 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 22px;
+}
+.quit-vim .small, .more-card .small { font-size: 26px; }
+.more-list { font: 500 32px/1.35 var(--f-head); }
+.qv-keys { font-size: 30px; display: flex; gap: 12px; align-items: center; }
+.qv-keys kbd, .qv-keys code {
+    font-family: var(--f-code);
+    font-size: 30px;
+    border: 1.5px solid var(--ink);
+    border-bottom-width: 3px;
+    border-radius: 6px;
+    padding: 2px 12px;
+    background: var(--paper);
+}
+.qv-keys code { color: var(--orange); border-color: var(--orange); }
+
+/* real screenshots */
+.shot {
+    display: block;
+    width: 100%;
+    max-height: 790px;
+    object-fit: contain;
+    object-position: left top;
+    border: 1.5px solid var(--ink);
+    margin-top: 4px;
+}
+
+/* real exchanges from Claude Code logs */
+.xcols > div { display: flex; flex-direction: column; }
+.xchg { border: 1.5px solid var(--ink); background: var(--paper); font-family: var(--f-code); font-size: 22px; line-height: 1.5; margin-top: 18px; }
+.xchg .x-you { background: var(--faint); border-bottom: 1px solid var(--rule); padding: 12px 16px 12px 40px; position: relative; overflow-wrap: anywhere; }
+.xchg .x-you::before { content: "❯"; position: absolute; left: 16px; color: var(--green); font-weight: 700; }
+.xchg .x-ai { padding: 14px 18px 8px 42px; position: relative; font-family: var(--f-body); font-size: 24px; line-height: 1.42; }
+.xchg .x-ai::before { content: "⏺"; position: absolute; left: 14px; top: 13px; color: var(--orange); font-size: 15px; }
+.xchg .x-ai code { font-size: 20px; background: var(--faint); padding: 0 4px; }
+.xchg .x-you .hl { color: var(--orange); }
+.xchg .x-src { padding: 0 18px 12px 42px; font-size: 17px; color: var(--gray); }
+.x-take { margin-top: 16px; font-size: 25px; line-height: 1.4; color: var(--green); }
+.x-head { margin-bottom: 0; }
+.chips { margin-top: auto; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 22px; color: var(--graphite); }
+.chips b { font-weight: 500; color: var(--ink); border: 1.5px solid var(--ink); border-radius: 999px; padding: 2px 16px; }
+.used { margin-top: auto; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 22px; color: var(--graphite); }
+.used b { font-weight: 500; color: var(--ink); border: 1.5px solid var(--green); border-radius: 999px; padding: 2px 16px; }
+.hero-n { font-family: var(--f-head); font-weight: 700; font-size: 200px; line-height: .9; letter-spacing: -0.04em; font-variation-settings: "wdth" 80, "opsz" 144; color: var(--ink); margin-bottom: 20px; }
+.hero-n span { font-size: .5em; color: var(--orange); margin-left: 6px; }
+.st-chart text { font-family: var(--f-body); }
+.st-chart .st-lbl { font-size: 24px; fill: var(--ink); }
+.st-chart .st-in { font-size: 21px; font-weight: 600; }
+.st-legend { display: flex; gap: 28px; margin: 6px 0 0 200px; font-size: 21px; color: var(--ink); }
+.st-legend i { display: inline-block; width: 16px; height: 16px; border-radius: 4px; margin-right: 8px; vertical-align: -2px; }
+.st-legend em { font-style: normal; color: var(--graphite); margin-left: 4px; }
+
+/* LLM closing slide */
+.desk-shot { margin: 0; }
+.desk-shot img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 1.5px solid var(--ink); background: var(--faint); }
+.desk-shot figcaption { margin-top: 14px; }
+.genie { font-family: var(--f-head); font-weight: 680; font-size: 64px; line-height: 1.08; letter-spacing: -0.015em; font-variation-settings: "wdth" 86, "opsz" 72; border-left: 6px solid var(--orange); padding-left: 32px; }
+
+/* batch 3 */
+.shot-crop { height: 300px; object-fit: cover; object-position: left top; }
+.divider .sec-log { font-size: 21px; max-width: 880px; }
+.st-wrap { display: flex; flex-direction: column; gap: 14px; max-width: 1200px; }
+.st-note { font-size: 32px; max-width: 46ch; margin-top: 18px; }
+.st-chart .st-val { font-size: 24px; font-weight: 600; fill: var(--ink); }
+.st-chart .st-val.o { fill: var(--orange); }
+.st-chart .st-ref { font-size: 20px; fill: var(--green); }
+.price-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.price-list li { display: flex; flex-direction: column; border-top: 1px solid var(--rule); padding-top: 10px; }
+.price-list b { font-family: var(--f-head); font-weight: 620; font-size: 25px; }
+.price-list span { font-size: 20px; color: var(--graphite); line-height: 1.35; }
+.torv { position: relative; margin: 0; }
+.torv-shot { display: block; width: 100%; border: 1.5px solid var(--ink); }
+.torv-git { position: absolute; right: -28px; top: -28px; width: 104px; height: 104px; padding: 16px; background: #fff; border: 1.5px solid var(--ink); border-radius: 50%; }
+.torv figcaption { margin-top: 10px; font-family: var(--f-code); }
+svg .fname { font-size: 17px; fill: var(--ink); }
+svg .fname.struck { fill: var(--red); text-decoration: line-through; }
+.why-git { display: flex; gap: 28px; align-items: flex-start; margin-top: 18px; }
+.why-chips { margin-top: auto; }
+.why-chips b { border-color: var(--green); }
+.plat-logo { width: 56px; height: 56px; object-fit: contain; display: inline-block; margin: 0 10px 14px 0; }
+.shot-sm { display: block; width: 100%; border: 1.5px solid var(--ink); }
+.signup-shots { display: flex; flex-direction: column; gap: 18px; }
+.signup-shots figure { margin: 0; }
+.signup-shots img { display: block; width: 100%; max-height: 300px; object-fit: cover; object-position: left top; border: 1.5px solid var(--ink); }
+.signup-shots figcaption { margin-top: 6px; }
+.web-steps { display: flex; gap: 28px; align-items: center; margin-top: 24px; }
+.web-steps figure { margin: 0; }
+.web-steps img { display: block; height: 120px; width: auto; max-width: 720px; object-fit: contain; border: 1.5px solid var(--ink); background: #fff; }
+.web-steps figcaption { margin-top: 6px; }
+@media (prefers-reduced-motion: no-preference) {
+    .slide.is-active svg.sweep .sw { opacity: 0; animation: pop .45s ease forwards; animation-delay: var(--d, 0s); }
+}
+
+/* /ctl preview copies */
+.preview .progress { display: none; }
+
+/* code::blocks note, junk examples, github feature cards */
+.more-note { margin-top: 24px; }
+.more-note .more-list { font: 500 22px/1.4 var(--f-head); }
+ul.plain.tight li { font-size: 25px; line-height: 1.4; margin-bottom: 12px; }
+ul.plain.tight code { font-size: 22px; }
+.junk-ex { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; margin-top: 12px; }
+.junk-ex > div { border-left: 4px solid var(--green); padding: 2px 0 2px 22px; font-size: 23px; line-height: 1.4; color: var(--graphite); }
+.junk-ex > div.bad { border-color: var(--red); }
+.junk-ex code { font-size: 20px; }
+.gh-pages .page { gap: 48px; }
+.gh-card { margin: 0; }
+.gh-card img { display: block; width: 100%; height: 450px; object-fit: cover; object-position: left top; border: 1.5px solid var(--ink); background: var(--faint); }
+.gh-card figcaption { margin-top: 14px; display: flex; flex-direction: column; gap: 4px; }
+.gh-card b { font-family: var(--f-head); font-weight: 640; font-size: 34px; }
+.gh-card span { font-size: 24px; line-height: 1.35; color: var(--graphite); }
+
+/* live phone mirror (mirror.sh + serve.py /mirror.mjpg); skin = Android Studio pixel_8_pro device art */
+.mirror-note { display: flex; align-items: center; gap: 12px; margin-top: -26px; }
+.live-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 4px var(--red-soft); }
+@media (prefers-reduced-motion: no-preference) {
+    .slide.is-active .live-dot { animation: live 1.6s ease-in-out infinite; }
+}
+@keyframes live { 50% { opacity: .35; } }
+.phone-stage { position: absolute; left: 150px; right: 150px; top: 340px; bottom: 130px; z-index: 2; }
+.phone {
+    position: relative;
+    position: absolute; left: 50%; top: 50%;
+    width: 1469px; height: 3104px;          /* skin's native size, scaled by JS */
+    transform: translate(-50%, -50%) rotate(0deg) scale(.2);
+    transition: transform .6s cubic-bezier(.3, .7, .2, 1);
+}
+.phone-back { position: absolute; inset: 0; width: 100%; height: 100%; }
+.phone-screen {
+    position: absolute; left: 58px; top: 58px; width: 1344px; height: 2992px;
+    object-fit: fill; background: #000;
+}
+/* the skin's "mask" is a foreground overlay: rounded corners + punch hole drawn over the screen */
+.phone-fg { position: absolute; left: 58px; top: 58px; width: 1344px; height: 2992px; pointer-events: none; }
+
+/* misc components */
+.callout {
+    border-left: 4px solid var(--orange);
+    padding: 6px 0 6px 28px;
+    font-size: 32px;
+    line-height: 1.4;
+    max-width: 40ch;
+}
+.callout.green { border-color: var(--green); }
+.callout.red { border-color: var(--red); }
+
+.steps { list-style: none; counter-reset: s; }
+.steps li {
+    counter-increment: s;
+    position: relative;
+    padding-left: 84px;
+    margin-bottom: 26px;
+    min-height: 54px;
+}
+.steps li::before {
+    content: counter(s);
+    position: absolute;
+    left: 0; top: -4px;
+    width: 54px; height: 54px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-family: var(--f-code);
+    font-size: 24px;
+}
+.steps li b { font-family: var(--f-head); font-weight: 600; }
+.steps li p { font-size: 24px; color: var(--graphite); line-height: 1.4; }
+
+.filelist {
+    font-family: var(--f-code);
+    font-size: 27px;
+    line-height: 1.85;
+}
+.filelist s { color: var(--red); text-decoration-thickness: 2px; }
+
+.os-col h3 { display: flex; align-items: baseline; gap: 14px; }
+.os-col .term { font-size: 23px; }
+
+.tag {
+    display: inline-block;
+    font-family: var(--f-code);
+    font-size: 20px;
+    border: 1.5px solid currentColor;
+    border-radius: 999px;
+    padding: 0 12px;
+    vertical-align: middle;
+}
+
+.agents { display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; }
+.agents div { border-top: 1px solid var(--rule); padding: 18px 0 20px; }
+.agents b { font-family: var(--f-head); font-weight: 620; font-size: 32px; display: block; }
+.agents span { font-size: 23px; color: var(--graphite); }
+
+.platforms { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; margin-top: 10px; }
+.platforms > div { padding-top: 22px; border-top: 1.5px solid var(--rule); }
+.platforms > div.pick { border-top: 4px solid var(--green); }
+.platforms b { font-family: var(--f-head); font-size: 40px; font-weight: 640; display: block; margin-bottom: 8px; }
+.platforms p { font-size: 23px; color: var(--graphite); }
+
+/* nav hint + progress */
+.progress {
+    position: fixed;
+    left: 0; bottom: 0;
+    height: 3px;
+    background: var(--green);
+    transition: width .2s ease;
+    z-index: 10;
+}
+
+:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+
+@media print {
+    @page { size: 1920px 1080px; margin: 0; }
+    html, body { overflow: visible; background: white; height: auto; }
+    .deck { position: static; transform: none !important; }
+    .slide { position: relative; opacity: 1; visibility: visible; page-break-after: always; width: 1920px; height: 1080px; }
+    .progress { display: none; }
+}
+
+/* ---- SHCM 2 entrance animations ---- */
+@media (prefers-reduced-motion: no-preference) {
+    .slide.is-active .content > h2,
+    .slide.is-active .content > .lede,
+    .slide.is-active .content > .term,
+    .slide.is-active .content > .cols > *,
+    .slide.is-active .content > p.small,
+    .slide.is-active .cols.c3 > div { animation: rise .55s cubic-bezier(.2,.7,.2,1) both; }
+    .slide.is-active .content > h2 { animation-delay: .05s; }
+    .slide.is-active .content > .cols > *:nth-child(1) { animation-delay: .2s; }
+    .slide.is-active .content > .cols > *:nth-child(2) { animation-delay: .38s; }
+    .slide.is-active .content > .cols > *:nth-child(3) { animation-delay: .56s; }
+    .slide.is-active .content > .term { animation-delay: .2s; }
+    .slide.is-active .content > p.small { animation-delay: .8s; }
+    .slide.is-active pre > span.add,
+    .slide.is-active pre > span.del { animation: type-in .35s ease both; }
+    .slide.is-active pre > span:nth-of-type(1) { animation-delay: 0.59s; }
+    .slide.is-active pre > span:nth-of-type(2) { animation-delay: 0.73s; }
+    .slide.is-active pre > span:nth-of-type(3) { animation-delay: 0.87s; }
+    .slide.is-active pre > span:nth-of-type(4) { animation-delay: 1.01s; }
+    .slide.is-active pre > span:nth-of-type(5) { animation-delay: 1.15s; }
+    .slide.is-active pre > span:nth-of-type(6) { animation-delay: 1.29s; }
+    .slide.is-active pre > span:nth-of-type(7) { animation-delay: 1.43s; }
+    .slide.is-active pre > span:nth-of-type(8) { animation-delay: 1.57s; }
+    .slide.is-active pre > span:nth-of-type(9) { animation-delay: 1.71s; }
+    .slide.is-active pre > span:nth-of-type(10) { animation-delay: 1.85s; }
+    .slide.is-active pre > span:nth-of-type(11) { animation-delay: 1.99s; }
+    .slide.is-active .callout { animation: rise .6s ease .6s both, nudge 1.2s ease 1.3s 1; }
+    .slide.divider.is-active h2 { animation: rise .7s cubic-bezier(.2,.7,.2,1) .1s both; }
+    .slide.divider.is-active .sec-list { animation: rise .6s ease .45s both; }
+    .slide.is-active .gem-spin { transform-origin: 1440px 540px; animation: spin 40s linear infinite; }
+    .slide.is-active .float { animation: float 3.2s ease-in-out infinite alternate; animation-delay: var(--d, 0s); }
+    .slide.is-active .shot { animation: rise .7s ease .35s both; }
+}
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes type-in { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+@keyframes nudge { 30% { transform: translateX(8px); } 60% { transform: translateX(-4px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes float { from { transform: translateY(-10px); } to { transform: translateY(10px); } }
+pre > span.add, pre > span.del { display: block; }
+</style>
+</head>
+<body>
+
+<main class="deck" id="deck">
+
+<section class="slide cover" data-sec="intro" data-quiet>
+<div class="decor"><svg viewBox="0 0 1920 1080" aria-hidden="true">
+  <g fill="none" stroke-width="1.5">
+    <circle class="draw" style="--len:2765" cx="1390" cy="500" r="440" stroke="#C9CED4" stroke-dasharray="6 8"/>
+    <circle class="draw" style="--len:1760;--d:.3s" cx="1390" cy="500" r="280" stroke="var(--ink)"/>
+    <circle class="draw" style="--len:754;--d:.6s" cx="1390" cy="500" r="120" stroke="var(--green)" stroke-width="2.5"/>
+    <line x1="900" y1="500" x2="1880" y2="500" stroke="#DCE0E4"/><line x1="1390" y1="40" x2="1390" y2="1000" stroke="#DCE0E4"/>
+    <line class="draw" style="--len:280;--d:1s" x1="1390" y1="500" x2="1638" y2="370" stroke="var(--orange)" stroke-width="2"/>
+  </g>
+  <g class="pop" style="--d:1.3s" font-family="Google Sans Code, monospace">
+    <text x="1400" y="372" font-size="18" fill="#9AA1AA">venv</text>
+    <text x="1400" y="212" font-size="18" fill="#9AA1AA">portfolio</text>
+    <text x="1745" y="800" font-size="18" fill="#9AA1AA">gem-arena</text>
+    <circle cx="1638" cy="370" r="6" fill="var(--orange)"/><text x="1652" y="362" font-size="22" fill="#E8710A">#2</text>
+  </g>
+  <text class="pop" style="--d:.9s" x="1390" y="514" font-size="40" fill="var(--green)" text-anchor="middle" font-family="Google Sans Code, monospace">(.venv)</text>
+  <g font-family="Google Sans Code, monospace" fill="#B9BFC6"><text x="1000" y="300" font-size="28">pip</text><text x="1000" y="150" font-size="28">&lt;/&gt;</text>
+    <text x="960" y="990" font-size="24">$ gemarena submit</text><text x="1700" y="250" font-size="22">.github.io</text></g>
+  <g class="pop float" style="--d:1.6s"><polygon points="1690,600 1730,570 1770,600 1730,660" fill="#fff" stroke="var(--green)" stroke-width="2.5"/>
+    <polyline points="1690,600 1770,600" fill="none" stroke="var(--green)" stroke-width="1.5"/></g>
+  <g class="pop float" style="--d:1.8s"><image href="../shcm-k65/res/Octicons-mark-github.svg" x="1110" y="610" width="64" height="64"/></g>
+  <g class="pop float" style="--d:2s"><image href="../shcm-k65/res/claude-code.svg" x="1560" y="140" width="60" height="60"/></g>
+</svg></div>
+
+    <div class="content">
+        <div class="sec-no">Sinh hoạt chuyên môn #2 · K65 · FTU Labs</div>
+        <h1>venv, Portfolio, Đá Quý</h1>
+        <p class="lede">Môi trường ảo cho code sạch, portfolio online dựng bằng AI, và một giải lập trình bot Python.</p>
+        <div class="sec-list"><span>$ ls shcm-2/</span><br>1-venv/&nbsp;&nbsp;2-portfolio/&nbsp;&nbsp;3-gem-arena/</div>
+    </div>
+</section>
+
+<!-- ===================== PHẦN 1: VIRTUAL ENVIRONMENTS ===================== -->
+<section class="slide divider" data-sec="venv">
+<div class="decor"><svg viewBox="0 0 1920 1080" aria-hidden="true"><rect class="draw" style="--len:2640;--d:0s" x="1120" y="200" width="640" height="680" rx="14" fill="none" stroke="#9AA1AA" stroke-width="2"/><text class="pop" style="--d:0.6s" x="1140" y="240" font-size="22" fill="#9AA1AA" font-family="Google Sans Code, monospace">~/k65 (máy bạn)</text><rect class="draw" style="--len:1560;--d:0.4s" x="1170" y="300" width="260" height="520" rx="14" fill="none" stroke="var(--green)" stroke-width="2"/><text class="pop" style="--d:1.0s" x="1190" y="340" font-size="22" fill="var(--green)" font-family="Google Sans Code, monospace">do-an/.venv</text><rect class="draw" style="--len:1560;--d:0.6s" x="1460" y="300" width="260" height="520" rx="14" fill="none" stroke="var(--orange)" stroke-width="2"/><text class="pop" style="--d:1.2s" x="1480" y="340" font-size="22" fill="var(--orange)" font-family="Google Sans Code, monospace">ml/.venv</text><text class="pop" style="--d:1.20s" x="1195" y="400" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">python 3.12</text><text class="pop" style="--d:1.35s" x="1195" y="460" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">numpy 1.26</text><text class="pop" style="--d:1.50s" x="1195" y="520" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">flask 3.0</text><text class="pop" style="--d:1.65s" x="1195" y="580" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">requests</text><text class="pop" style="--d:1.30s" x="1485" y="400" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">python 3.11</text><text class="pop" style="--d:1.45s" x="1485" y="460" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">numpy 2.1</text><text class="pop" style="--d:1.60s" x="1485" y="520" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">torch 2.5</text><text class="pop" style="--d:1.75s" x="1485" y="580" font-size="20" fill="var(--ink)" font-family="Google Sans Code, monospace">jupyter</text></svg></div>
+
+    <div class="content">
+        <div class="sec-no">Phần 1 / 3</div>
+        <h2>Virtual Environments</h2>
+        <div class="sec-list"><span>$ ls venv/</span><br>tai-sao.md&nbsp;&nbsp;python.md&nbsp;&nbsp;cong-cu.md&nbsp;&nbsp;thoi-quen.md</div>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat tai-sao.md</div>
+        <h2>"Máy em chạy được mà"</h2>
+        <div class="cols" style="grid-template-columns: 1fr 1fr; gap: 70px;">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>pip install toàn cục</span></div>
+<pre><span class="del">- project-A cần numpy 1.26</span><span class="del">- project-B cần numpy 2.1</span><span class="del">- Cài đè lên nhau: cái này chạy thì cái kia hỏng</span><span class="del">- sudo pip làm bẩn Python của hệ điều hành</span></pre>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:36px; padding-top:10px">
+                <p class="callout">Mỗi project một môi trường riêng: interpreter, thư viện, phiên bản.</p>
+                <p class="small muted">Môi trường ảo là một thư mục chứa bản Python và các gói riêng của project. Xóa thư mục là sạch, không ảnh hưởng tới máy.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat python.md</div>
+        <h2>venv: có sẵn trong Python</h2>
+        <div class="cols" style="grid-template-columns: 1fr 1fr; gap: 56px;">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>$ python3 -m venv .venv
+$ source .venv/bin/activate
+(.venv) $ pip install requests numpy
+(.venv) $ pip freeze > requirements.txt
+(.venv) $ deactivate
+
+# người khác clone về:
+$ python3 -m venv .venv
+$ source .venv/bin/activate
+(.venv) $ pip install -r requirements.txt</pre>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:28px; padding-top:10px">
+                <p class="lede">Thấy <b>(.venv)</b> trên prompt là đang ở trong môi trường ảo.</p>
+                <p class="small muted">Windows: <code>.venv\Scripts\activate</code>. <b>requirements.txt</b> là "công thức" để người khác dựng lại đúng môi trường của bạn: commit file này, <b>không</b> commit thư mục .venv.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ ls cong-cu/</div>
+        <h2>Các công cụ phổ biến</h2>
+        <div class="cols" style="grid-template-columns: 1fr 1fr 1fr; gap: 40px;">
+            <div><p class="lede"><b>uv</b></p><p class="small muted">Thay pip + venv, nhanh hơn nhiều lần: <code>uv venv</code>, <code>uv add</code>, <code>uv run main.py</code>. Quản lý luôn phiên bản Python.</p></div>
+            <div><p class="lede"><b>conda / mamba</b></p><p class="small muted">Phổ biến trong data science, cài được cả thư viện không phải Python (CUDA, MKL): <code>conda create -n ml python=3.12</code>.</p></div>
+            <div><p class="lede"><b>Docker</b></p><p class="small muted">Cô lập cả hệ điều hành. Dùng khi deploy hoặc khi cần thêm service như database, Redis.</p></div>
+        </div>
+        <p class="small muted" style="margin-top:40px">Ngôn ngữ khác cũng vậy: Node có <b>node_modules</b> và <b>nvm</b>, Rust có <b>cargo</b>, Go có <b>go.mod</b>.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ which python</div>
+        <h2>Python nào đang chạy?</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>trước khi activate</span></div>
+<pre>$ which python3
+/usr/bin/python3
+$ python3 -c "import sys; print(sys.prefix)"
+/usr
+$ pip list | wc -l
+187        # đủ thứ đã cài từ năm nhất</pre>
+            </div>
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>sau khi activate</span></div>
+<pre>(.venv) $ which python
+~/k65/bai-tap/.venv/bin/python
+(.venv) $ python -c "import sys; print(sys.prefix)"
+~/k65/bai-tap/.venv
+(.venv) $ pip list | wc -l
+3          # sạch: chỉ pip + setuptools</pre>
+            </div>
+        </div>
+        <p class="small muted" style="margin-top:28px">Lỗi "ModuleNotFoundError" mà rõ ràng đã pip install? 90% là bạn cài vào một Python, chạy bằng một Python khác.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat windows.md</div>
+        <h2>Trên Windows</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>PowerShell</span></div>
+<pre>PS> py -3.12 -m venv .venv
+PS> .venv\Scripts\Activate.ps1
+(.venv) PS> pip install -r requirements.txt
+
+# nếu báo "running scripts is disabled":
+PS> Set-ExecutionPolicy -Scope CurrentUser RemoteSigned</pre>
+            </div>
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>cmd.exe</span></div>
+<pre>> py -m venv .venv
+> .venv\Scripts\activate.bat
+(.venv) > python --version
+Python 3.12.7</pre>
+            </div>
+        </div>
+        <p class="small muted" style="margin-top:28px">Dùng <code>py</code> launcher để chọn phiên bản. Hoặc dùng WSL và làm y như Linux.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat requirements.txt</div>
+        <h2>requirements.txt: ghim phiên bản</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>requirements.txt</span></div>
+<pre>numpy==2.1.3          # đúng bản này
+pandas>=2.2,&lt;3        # khoảng cho phép
+requests~=2.32        # 2.32.x
+matplotlib            # bản mới nhất (rủi ro)</pre>
+            </div>
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>(.venv) $ pip install numpy pandas
+(.venv) $ pip freeze > requirements.txt
+(.venv) $ pip install -r requirements.txt
+(.venv) $ pip install -U pandas   # nâng cấp
+(.venv) $ pip uninstall pandas</pre>
+            </div>
+        </div>
+        <p class="small muted" style="margin-top:28px">Nộp bài, gửi đồ án, deploy: luôn kèm requirements.txt để người chấm chạy được.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat uv.md</div>
+        <h2>uv: nhanh và gọn</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre># cài uv (Linux / macOS)
+$ curl -LsSf https://astral.sh/uv/install.sh | sh
+# Windows (PowerShell)
+PS> powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+$ uv init do-an && cd do-an
+$ uv add pandas matplotlib
+$ uv run main.py</pre>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:28px; padding-top:10px">
+                <p class="lede"><code>uv add</code> tự tạo .venv, ghi vào <b>pyproject.toml</b> và khóa phiên bản trong <b>uv.lock</b>.</p>
+                <p class="small muted">Người khác clone về chỉ cần <code>uv sync</code>. Cần Python khác? <code>uv python install 3.12</code>.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat conda.md</div>
+        <h2>conda: cho data science, ML</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>$ conda create -n ml python=3.12 -y
+$ conda activate ml
+(ml) $ conda install numpy pandas scikit-learn jupyter -y
+(ml) $ conda env export --from-history > environment.yml
+(ml) $ conda deactivate
+
+# máy khác:
+$ conda env create -f environment.yml
+$ conda env list            # xem các môi trường
+$ conda env remove -n ml    # xóa</pre>
+        </div>
+        <p class="small muted" style="margin-top:28px">Jupyter dùng đúng môi trường: <code>pip install ipykernel</code> rồi <code>python -m ipykernel install --user --name ml</code>.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat docker.md</div>
+        <h2>Docker: cô lập cả hệ điều hành</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>Dockerfile</span></div>
+<pre>FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["python", "main.py"]</pre>
+            </div>
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>$ docker build -t do-an .
+$ docker run --rm do-an
+
+# cần database cho đồ án?
+$ docker run -d --name pg -p 5432:5432 \
+    -e POSTGRES_PASSWORD=dev postgres:17</pre>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat .gitignore</div>
+        <h2>.gitignore và VS Code</h2>
+        <div class="cols c2-wide">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>.gitignore</span></div>
+<pre>.venv/
+venv/
+__pycache__/
+*.pyc
+.env            # mật khẩu, API key
+node_modules/
+.ipynb_checkpoints/</pre>
+            </div>
+            <img class="shot" src="../shcm-k65/res/vscode.png" alt="VS Code">
+        </div>
+        <p class="small muted" style="margin-top:24px">VS Code: Ctrl+Shift+P → <b>Python: Select Interpreter</b> → chọn <code>./.venv/bin/python</code>. Terminal mới sẽ tự activate.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ cat loi-thuong-gap.md</div>
+        <h2>Lỗi thường gặp</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>debug.md</span></div>
+<pre><span class="del">error: externally-managed-environment</span>  → Ubuntu/Debian chặn pip toàn cục: tạo .venv
+<span class="del">ModuleNotFoundError: No module named 'x'</span>  → chưa activate, hoặc VS Code chọn sai interpreter
+<span class="del">'python' is not recognized</span>  → Windows: dùng py, hoặc tick "Add to PATH" khi cài
+<span class="del">.venv chạy lỗi sau khi đổi tên thư mục</span>  → venv không di chuyển được: xóa và tạo lại</pre>
+        </div>
+        <p class="small muted" style="margin-top:28px">Hỏng thì cứ xóa: <code>rm -rf .venv</code>, tạo lại, <code>pip install -r requirements.txt</code>. Đó là lý do có requirements.txt.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="venv">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/venv</span>$ git diff thoi-quen.md</div>
+        <h2>Thói quen tốt</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>thoi-quen.md</span></div>
+<pre><span class="del">- pip install thẳng vào Python hệ thống</span><span class="del">- Commit cả thư mục .venv/ lên GitHub</span><span class="del">- README chỉ ghi "cài thư viện rồi chạy"</span>
+<span class="add">+ Mỗi project một .venv, tạo ngay khi git init</span><span class="add">+ Thêm .venv/ vào .gitignore</span><span class="add">+ Ghi phiên bản vào requirements.txt hoặc pyproject.toml</span><span class="add">+ Trong VS Code chọn đúng interpreter: Python: Select Interpreter</span></pre>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== PHẦN 2: PORTFOLIO VỚI AI ===================== -->
+<section class="slide divider" data-sec="portfolio">
+<div class="decor"><svg viewBox="0 0 1920 1080" aria-hidden="true"><rect class="draw" style="--len:1280" x="1500" y="240" width="300" height="340" rx="8" fill="none" stroke="#9AA1AA" stroke-width="2"/><text class="pop" style="--d:.6s" x="1520" y="280" font-size="20" fill="#9AA1AA" font-family="Google Sans Code, monospace">resume.pdf</text><line class="draw" style="--len:220;--d:0.5s" x1="1530" y1="320" x2="1760" y2="320" stroke="#C9CED4" stroke-width="6"/><line class="draw" style="--len:220;--d:0.6s" x1="1530" y1="360" x2="1720" y2="360" stroke="#C9CED4" stroke-width="6"/><line class="draw" style="--len:220;--d:0.7s" x1="1530" y1="400" x2="1680" y2="400" stroke="#C9CED4" stroke-width="6"/><line class="draw" style="--len:220;--d:0.8s" x1="1530" y1="440" x2="1760" y2="440" stroke="#C9CED4" stroke-width="6"/><line class="draw" style="--len:220;--d:0.9s" x1="1530" y1="480" x2="1720" y2="480" stroke="#C9CED4" stroke-width="6"/><line class="draw" style="--len:220;--d:1.0s" x1="1530" y1="520" x2="1680" y2="520" stroke="#C9CED4" stroke-width="6"/><path class="draw" style="--len:300;--d:1s" d="M1650 600 C 1650 680, 1500 660, 1440 720" fill="none" stroke="var(--orange)" stroke-width="2.5" stroke-dasharray="8 6"/><rect class="draw" style="--len:1900;--d:1.3s" x="1040" y="720" width="560" height="280" rx="14" fill="none" stroke="var(--ink)" stroke-width="2"/><circle class="pop" style="--d:1.9s" cx="1070" cy="748" r="7" fill="var(--red)"/><circle class="pop" style="--d:2s" cx="1094" cy="748" r="7" fill="var(--orange)"/><circle class="pop" style="--d:2.1s" cx="1118" cy="748" r="7" fill="var(--green)"/><text class="pop" style="--d:2.2s" x="1150" y="755" font-size="18" fill="#9AA1AA" font-family="Google Sans Code, monospace">you.github.io</text><text class="pop" style="--d:2.4s" x="1080" y="840" font-size="40" fill="var(--ink)" font-family="Google Sans Flex, sans-serif" font-weight="600">Xin chào, mình là …</text><rect class="pop" style="--d:2.6s" x="1080" y="880" width="150" height="44" rx="22" fill="var(--green)"/><text class="pop" style="--d:2.6s" x="1110" y="909" font-size="18" fill="#fff" font-family="Google Sans Code, monospace">Tải CV</text></svg></div>
+
+    <div class="content">
+        <div class="sec-no">Phần 2 / 3</div>
+        <h2>Portfolio Online với AI</h2>
+        <div class="sec-list"><span>$ ls portfolio/</span><br>chuan-bi.md&nbsp;&nbsp;cong-cu.md&nbsp;&nbsp;prompt.md&nbsp;&nbsp;skills.md&nbsp;&nbsp;deploy.md&nbsp;&nbsp;checklist.md</div>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat README.md</div>
+        <h2>Từ file CV thành trang web cá nhân</h2>
+        <p class="lede">Gửi CV → mô tả mong muốn → xem trước → sửa bằng prompt → deploy.</p>
+        <p class="small muted" style="margin-top:28px">Một link để gửi nhà tuyển dụng, gắn vào LinkedIn và GitHub. Theo hướng dẫn của Đinh Bảo Ngọc: <b>bngocdftu.github.io/portfolio-guide</b></p>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat chuan-bi.md</div>
+        <h2>1 · Chuẩn bị</h2>
+        <div class="cols" style="grid-template-columns: 1fr 1fr; gap: 70px;">
+            <div>
+                <p class="lede">CV (PDF/DOCX) đã soát lại, ảnh đại diện, ảnh hoặc link dự án.</p>
+                <p class="small muted" style="margin-top:24px">Tài khoản GitHub (bắt buộc để deploy). Chọn 2–3 portfolio bạn thích làm mẫu thiết kế.</p>
+            </div>
+            <p class="callout">Xóa số CCCD, địa chỉ chi tiết, ngày sinh khỏi CV. Chỉ giữ email, LinkedIn, GitHub.</p>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ ls cong-cu/</div>
+        <h2>2 · Chọn công cụ</h2>
+        <div class="cols" style="grid-template-columns: 1fr 1fr 1fr; gap: 40px;">
+            <div><p class="lede"><b>Google AI Studio</b></p><p class="small muted">Chạy trên trình duyệt, chế độ Build, xem trước ngay. Dễ nhất: tải CV, dán prompt, sửa qua chat, đẩy lên GitHub hoặc tải ZIP.</p></div>
+            <div><p class="lede"><b>Antigravity</b></p><p class="small muted">IDE có agent tự viết code, chạy thử, sửa lỗi. Tạo thư mục trống, bỏ resume.pdf vào, mở Agent, duyệt kế hoạch.</p></div>
+            <div><p class="lede"><b>Claude Code</b></p><p class="small muted">Agent trong terminal hoặc VS Code, hỗ trợ Skills. Tạo thư mục my-portfolio, chạy <code>claude</code>, tham chiếu <code>@resume.pdf</code>.</p></div>
+        </div>
+        <p class="small muted" style="margin-top:40px">Mẹo: chọn HTML/CSS/JS thuần hoặc Vite + React để deploy dễ.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat prompt.md</div>
+        <h2>3 · Prompt mẫu</h2>
+        <div class="cols" style="grid-template-columns: 1fr 1fr; gap: 48px;">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>khoi-tao.txt</span></div>
+<pre>Tạo portfolio một trang từ @resume.pdf:
+Hero, About, Skills, Projects,
+Experience (timeline), Education, Contact.
+Tối giản, nền sáng, tiêu đề font serif.
+Responsive, dark mode, SEO cơ bản.
+Không thêm thông tin ngoài CV.</pre>
+            </div>
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>chinh-sua.txt</span></div>
+<pre>Viết lại About dưới 60 từ.
+Dự án: Vấn đề → Giải pháp → Kết quả.
+Thêm nút Tiếng Việt / English.
+Kiểm tra ở màn hình 375px.
+Tối ưu ảnh, lazy-load, chạy Lighthouse.</pre>
+            </div>
+        </div>
+        <p class="small muted" style="margin-top:32px">Mỗi lần chỉ xin 1–2 thay đổi, kèm ảnh chụp chỗ chưa ưng.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat skills.md</div>
+        <h2>4 · Skills: cho agent có gu</h2>
+        <div class="cols" style="grid-template-columns: 1fr 1fr; gap: 70px;">
+            <div>
+                <p class="lede">Skill là gói hướng dẫn (<code>SKILL.md</code>) dạy agent thiết kế tốt hơn: Taste Skill, Frontend Design, Portfolio Builder.</p>
+                <p class="small muted" style="margin-top:24px">Claude Code: <code>~/.claude/skills/&lt;tên&gt;/SKILL.md</code>. Antigravity, AI Studio: thêm SKILL.md vào project hoặc dán vào chat. Dùng Lighthouse đo hiệu năng, SEO, accessibility.</p>
+            </div>
+            <p class="callout">Chỉ cài skill từ nguồn tin cậy và đọc trước: skill có thể chứa lệnh chạy trên máy bạn.</p>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat tao-ai-studio.md</div>
+        <h2>Cách A · Google AI Studio</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>các bước</span></div>
+<pre>1. aistudio.google.com → Build
+2. Đính kèm resume.pdf
+3. Dán prompt khởi tạo (slide sau)
+4. Xem preview bên phải, sửa qua chat
+5. Save to GitHub, hoặc Download ZIP</pre>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:28px; padding-top:10px">
+                <p class="lede">Không cần cài gì, chỉ cần trình duyệt và tài khoản Google.</p>
+                <p class="small muted">Hợp với bạn chưa quen terminal. Nhược điểm: khó tùy biến sâu, code nằm trên web cho tới khi bạn đẩy về GitHub.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat tao-antigravity.md</div>
+        <h2>Cách B · Antigravity</h2>
+        <div class="cols c2-wide">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>các bước</span></div>
+<pre>1. Tạo thư mục trống my-portfolio/
+2. Bỏ resume.pdf và ảnh vào thư mục
+3. Mở thư mục trong Antigravity
+4. Mở Agent, dán prompt khởi tạo
+5. Đọc kế hoạch agent đưa ra → Approve
+6. Xem preview, chụp màn hình chỗ chưa ưng
+   gửi lại cho agent</pre>
+            </div>
+            <img class="shot" src="../shcm-k65/res/shots/antigravity.png" alt="Antigravity">
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat tao-claude-code.md</div>
+        <h2>Cách C · Claude Code</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>$ mkdir my-portfolio && cd my-portfolio
+$ cp ~/Downloads/resume.pdf ~/Pictures/avatar.jpg .
+$ claude
+
+> Đọc @resume.pdf và tạo portfolio một trang bằng HTML/CSS/JS thuần,
+  dùng @avatar.jpg làm ảnh đại diện. Xong thì chạy local server để mình xem.
+
+> Mở http://localhost:8000 trên màn 375px và sửa chỗ bị tràn ngang.</pre>
+        </div>
+        <p class="small muted" style="margin-top:24px">Xem thử không cần agent: <code>python3 -m http.server 8000</code> rồi mở localhost:8000.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat prompt-day-du.txt</div>
+        <h2>Prompt khởi tạo đầy đủ (copy được)</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>prompt-day-du.txt</span></div>
+<pre>Bạn là web designer. Từ CV đính kèm, tạo website portfolio một trang gồm:
+Hero (tên, chức danh, 1 câu giới thiệu, nút "Tải CV" và "Liên hệ"),
+About, Skills (nhóm theo loại), Projects (thẻ có ảnh, tag công nghệ, link),
+Experience (timeline), Education, Contact (email, LinkedIn, GitHub).
+Phong cách: tối giản, nền sáng, màu nhấn hồng pastel, tiêu đề font serif.
+Yêu cầu: responsive, có dark mode, SEO cơ bản (title, meta description,
+Open Graph). Chỉ dùng thông tin có trong CV, chỗ nào thiếu thì để [TODO].</pre>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat prompt-du-an.txt</div>
+        <h2>Viết mô tả dự án cho ra hồn</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>prompt</span></div>
+<pre>Viết lại mỗi dự án trong mục Projects
+theo cấu trúc:
+- Vấn đề: 1 câu
+- Giải pháp: 1-2 câu, nêu công nghệ
+- Kết quả: con số cụ thể nếu CV có
+Tối đa 50 từ mỗi dự án.</pre>
+            </div>
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>trước → sau</span></div>
+<pre><span class="del">- Làm web bán hàng bằng React</span>
+<span class="add">+ Vấn đề: shop của CLB ghi đơn bằng Excel.</span><span class="add">+ Giải pháp: web React + Firebase, giỏ hàng,</span><span class="add">  thanh toán QR.</span><span class="add">+ Kết quả: 300 đơn trong tuần mở bán.</span></pre>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat prompt-nang-cap.txt</div>
+        <h2>Prompt nâng cấp từng bước</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>mỗi lần gửi một dòng</span></div>
+<pre>Thêm hiệu ứng xuất hiện nhẹ khi cuộn, tắt khi người dùng bật reduce-motion.
+Thêm nút chuyển Tiếng Việt / English, nhớ lựa chọn bằng localStorage.
+Ảnh: chuyển sang WebP, thêm width/height và loading="lazy".
+Chạy Lighthouse, sửa đến khi Performance, SEO, Accessibility đều trên 90.
+Thêm favicon từ chữ cái đầu tên mình và ảnh Open Graph 1200×630.
+Kiểm tra tương phản màu chữ ở cả light và dark mode.</pre>
+        </div>
+        <p class="small muted" style="margin-top:24px">Sau mỗi thay đổi ổn: <code>git commit</code>. Agent làm hỏng thì quay lại được.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat github-pages.md</div>
+        <h2>GitHub Pages từng bước</h2>
+        <div class="cols c2-wide">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>$ git init -b main
+$ git add .
+$ git commit -m "feat: portfolio v1"
+$ gh repo create portfolio --public \
+    --source . --push
+$ gh api -X POST repos/{owner}/portfolio/pages \
+    -f "source[branch]=main" -f "source[path]=/"
+# vài phút sau:
+# https://&lt;username&gt;.github.io/portfolio</pre>
+            </div>
+            <img class="shot" src="../shcm-k65/res/shots/ftulabs-home.png" alt="ftulabs.github.io">
+        </div>
+        <p class="small muted" style="margin-top:20px">Muốn link gọn <b>username.github.io</b>? Đặt tên repo đúng là <code>&lt;username&gt;.github.io</code>.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat deploy.md</div>
+        <h2>5 · Deploy</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>$ gh auth login
+$ gh repo create portfolio --public --source . --push
+
+# GitHub Pages: Settings → Pages → main / root → username.github.io/portfolio
+$ npx vercel --prod              # → portfolio-xxx.vercel.app
+$ npx netlify deploy --prod      # → ten-ban.netlify.app</pre>
+        </div>
+        <p class="small muted" style="margin-top:28px">Hoặc nhờ agent làm hết. Nối repo với Vercel hoặc Netlify thì mỗi lần push là tự deploy lại.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="portfolio">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/portfolio</span>$ cat checklist.md</div>
+        <h2>6 · Checklist trước khi chia sẻ</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>checklist.md</span></div>
+<pre><span class="add">+ Nội dung khớp CV, không có gì AI tự bịa</span><span class="add">+ Không lộ thông tin nhạy cảm</span><span class="add">+ Đẹp trên điện thoại lẫn máy tính, mọi link đều chạy</span><span class="add">+ Có nút tải CV (PDF) và cách liên hệ rõ ràng</span><span class="add">+ Ít nhất 2–3 dự án có mô tả cụ thể và kết quả</span><span class="add">+ Đã gắn link portfolio vào CV, LinkedIn, GitHub</span></pre>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== PHẦN 3: ĐẤU TRƯỜNG ĐÁ QUÝ ===================== -->
+<section class="slide divider" data-sec="gem">
+<div class="decor"><svg viewBox="0 0 1920 1080" aria-hidden="true"><g class="gem-spin"><polygon class="draw" style="--len:1500" points="1440,200 1700,400 1440,880 1180,400" fill="none" stroke="var(--green)" stroke-width="2.5"/><polyline class="draw" style="--len:900;--d:.5s" points="1180,400 1300,300 1440,400 1580,300 1700,400" fill="none" stroke="var(--ink)" stroke-width="1.5"/><line class="draw" style="--len:520;--d:.8s" x1="1180" y1="400" x2="1700" y2="400" stroke="var(--ink)" stroke-width="1.5"/><polyline class="draw" style="--len:1000;--d:1s" points="1300,400 1440,880 1580,400" fill="none" stroke="#C9CED4" stroke-width="1.5"/><line class="draw" style="--len:300;--d:1.1s" x1="1440" y1="200" x2="1440" y2="400" stroke="#C9CED4"/></g><circle class="pop float" style="--d:1.4s" cx="1120" cy="780" r="16" fill="var(--red)"/><circle class="pop float" style="--d:1.6s" cx="1780" cy="700" r="16" fill="var(--green)"/><circle class="pop float" style="--d:1.8s" cx="1760" cy="220" r="16" fill="var(--orange)"/><circle class="pop float" style="--d:2.0s" cx="1130" cy="220" r="16" fill="#4285F4"/><circle class="pop float" style="--d:2.2s" cx="1300" cy="960" r="16" fill="var(--ink)"/></svg></div>
+
+    <div class="content">
+        <div class="sec-no">Phần 3 / 3</div>
+        <h2>Đấu Trường Đá Quý</h2>
+        <div class="sec-list"><span>$ ls gem-arena/</span><br>gioi-thieu.md&nbsp;&nbsp;luat.md&nbsp;&nbsp;bat-dau.md&nbsp;&nbsp;lich.md</div>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat gioi-thieu.md</div>
+        <h2>Giải lập trình bot Python</h2>
+        <div class="cols" style="grid-template-columns: 1fr 1fr; gap: 70px;">
+            <div>
+                <p class="lede">Thi cá nhân. Viết bot chơi game thẻ bài đá quý; bot của bạn đấu với bot của người khác trên ladder chạy 24/7.</p>
+                <p class="small muted" style="margin-top:24px">Mùa 1: <b>24.11 – 23.12.2026</b>. Trang giải: <b>spl.deepsentry.vn</b></p>
+            </div>
+            <p class="callout">Chơi để hiểu luật, rồi viết bot.</p>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat luat.md</div>
+        <h2>Luật chơi tóm tắt</h2>
+        <div class="cols" style="grid-template-columns: 1fr 1fr; gap: 56px;">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>mỗi lượt, chọn một</span></div>
+<pre><span class="add">+ Lấy đá quý (giữ tối đa 10 viên)</span><span class="add">+ Mua thẻ cấp 1–3, mỗi thẻ cho ưu đãi vĩnh viễn</span><span class="add">+ Giữ chỗ một thẻ để mua sau</span></pre>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:28px; padding-top:10px">
+                <p class="lede">Đủ thẻ thì được <b>Quý nhân</b> ghé thăm và cộng điểm.</p>
+                <p class="small muted">Có chế độ <b>Học chơi</b> (5 chặng ngắn) và đấu <b>Boss</b> từ Dễ tới Huyền Thoại. Trận 1v1 và 4 người. Luật đầy đủ trên trang giải.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat bat-dau.md</div>
+        <h2>Bắt đầu</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre># 1. Đăng ký bằng MSSV trên spl.deepsentry.vn
+# 2. Tạo .venv (Phần 1!), cài SDK bằng một lệnh pip, tạo bot mẫu
+$ python3 -m venv .venv && source .venv/bin/activate
+# 3. Sửa bot, chạy thử với Boss Dễ (kiểm tra như máy chủ)
+# 4. Nộp và chờ xếp hạng
+$ gemarena submit</pre>
+        </div>
+        <p class="small muted" style="margin-top:28px">Không muốn cài gì: soạn, chạy thử với Boss và nộp ngay trên trình duyệt.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat lich.md</div>
+        <h2>Lịch giải</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>lich.md</span></div>
+<pre>24.11   Mở đăng ký, SDK, Học chơi; ladder bắt đầu chạy
+ ...    Ladder 24/7: league, rating, replay mọi trận
+22.12   23:59 đóng băng bot, hết hạn nộp
+23.12   Chốt top 8 bảng 1v1, chạy chung kết</pre>
+        </div>
+        <p class="small muted" style="margin-top:28px">Mẹo: nộp bản cuối sớm vài giờ. Giải thưởng và luật chi tiết xem trên trang giải.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat tai-sao.md</div>
+        <h2>Vì sao nên tham gia?</h2>
+        <div class="cols c3">
+            <div><p class="lede"><b>Luyện Python thật</b></p><p class="small muted">Đọc trạng thái game, sinh nước đi hợp lệ, xử lý lỗi: code chạy thật trên máy chủ, không phải bài tập chấm tay.</p></div>
+            <div><p class="lede"><b>Tư duy thuật toán</b></p><p class="small muted">Tham lam, heuristic, tìm kiếm cây trò chơi, mô phỏng. Bắt đầu đơn giản, nâng dần.</p></div>
+            <div><p class="lede"><b>Vào portfolio</b></p><p class="small muted">Thứ hạng ladder và repo bot là một dự án đáng ghi vào portfolio ở Phần 2.</p></div>
+        </div>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat chien-thuat.md</div>
+        <h2>Từ bot ngây thơ tới bot mạnh</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>lo-trinh.md</span></div>
+<pre>v0  Chọn ngẫu nhiên một nước hợp lệ        → chạy được, nộp được
+v1  Tham lam: mua được thẻ điểm cao thì mua  → thắng Boss Dễ
+v2  Chấm điểm mỗi nước bằng heuristic:
+    điểm + giá trị ưu đãi + tiến độ tới Quý nhân − đá bị thừa
+v3  Nhìn trước 1-2 nước, đoán nước đối thủ
+v4  Mô phỏng nhiều ván (Monte Carlo) để chọn nước tốt nhất</pre>
+        </div>
+        <p class="small muted" style="margin-top:24px">Mỗi phiên bản: đấu Boss trên máy mình trước, thắng nhiều hơn bản cũ mới nộp.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat bot_minh_hoa.py</div>
+        <h2>Khung bot (minh họa)</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>bot_minh_hoa.py</span></div>
+<pre>import random
+
+def score(move, state):
+    """Heuristic: càng cao càng tốt. Tự thiết kế phần này."""
+    s = 0
+    s += 3 * move_points(move, state)      # điểm có ngay
+    s += 1 * bonus_value(move, state)      # ưu đãi giảm giá về sau
+    s -= 2 * wasted_gems(move, state)      # vượt quá 10 viên
+    return s
+
+def choose(state, legal_moves):
+    if not legal_moves:
+        return None
+    best = max(score(m, state) for m in legal_moves)
+    return random.choice([m for m in legal_moves if score(m, state) == best])</pre>
+        </div>
+        <p class="small muted" style="margin-top:20px">Đây là pseudo-code để nói ý tưởng. Tên hàm và cấu trúc state thật nằm trong bot mẫu của SDK.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat quy-trinh.md</div>
+        <h2>Quy trình làm bot gọn gàng</h2>
+        <div class="term">
+            <div class="t-head"><i></i><i></i><i></i><span>bash</span></div>
+<pre>$ mkdir gem-bot && cd gem-bot
+$ python3 -m venv .venv && source .venv/bin/activate   # Phần 1
+$ git init -b main && echo ".venv/" > .gitignore        # SHCM 1
+# cài SDK và tạo bot mẫu theo hướng dẫn trên trang giải
+$ git add . && git commit -m "bot v0: random"
+# sửa → đấu Boss → thắng hơn bản cũ?
+$ git commit -am "bot v1: greedy"
+$ gemarena submit</pre>
+        </div>
+        <p class="small muted" style="margin-top:20px">Ba buổi gộp lại: venv giữ môi trường sạch, Git giữ lịch sử, portfolio khoe kết quả.</p>
+    </div>
+</section>
+
+<section class="slide" data-sec="gem">
+    <div class="content">
+        <div class="path"><span class="p-user">k65@ctas.ftu</span>:<span class="p-dir">~/gem-arena</span>$ cat luat-choi-dep.md</div>
+        <h2>Liêm chính và lưu ý</h2>
+        <div class="cols c2">
+            <div class="term">
+                <div class="t-head"><i></i><i></i><i></i><span>nen-va-khong.md</span></div>
+<pre><span class="add">+ Tự viết bot, dùng AI để hỏi và học</span><span class="add">+ Đọc điều khoản trên trang giải</span><span class="add">+ Có vấn đề thì gửi khiếu nại qua trang</span>
+<span class="del">- Nộp bot của người khác</span><span class="del">- Khai thác lỗi máy chủ</span><span class="del">- Để sát hạn mới nộp</span></pre>
+            </div>
+            <p class="callout">Bot bị đóng băng sau 23:59 ngày 22/12. Nộp bản cuối sớm vài giờ.</p>
+        </div>
+    </div>
+</section>
+
+<section class="slide divider" data-sec="end">
+    <div class="content">
+        <div class="sec-no">EOF</div>
+        <h2>Hỏi đáp</h2>
+        <div class="sec-list"><span>$ gemarena submit</span><br>Hẹn gặp bot của bạn trên ladder.</div>
+    </div>
+</section>
+
+</main>
+<div class="progress" id="progress"></div>
+
+<script>
+(function () {
+    const deck = document.getElementById("deck");
+    const slides = Array.from(deck.querySelectorAll(".slide"));
+    const total = slides.length;
+    const pad = n => String(n).padStart(2, "0");
+
+    // seeded random so each sheet keeps the same layout
+    function rng(seed) {
+        return function () {
+            seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+            let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+            t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+    }
+
+    const GLYPHS = ["<>", "#$!?", "#include", "/usr/bin/sh", "{ }", "&&", "||", "0x1F", "~/", "#!/bin/bash",
+        "git log", "λ", "::", "!=", "=>", "/* */", "$?", "chmod +x", "[ ]", "%d\\n", "</>", "sudo !!", "<<EOF", "#define"];
+
+    // ring diagram shared with the cover: inner = git, middle = ide, outer = agents + OS
+    const ORBIT = { cx: 1390, cy: 500, rings: { git: 120, ide: 280, outer: 440 } };
+    const ORBIT_LABELS = { git: "git", ide: "ide", outer: "agent, os" };
+    const ORBIT_COLORS = { git: "#1E8E3E", ide: "#1E2226", outer: "#1E2226" };
+    const R_LABEL = "r = 67";
+    const NODES = [
+        ["Git_icon.svg", "git", 30, "git"], ["Octicons-mark-github.svg", "git", 210, "git"],
+        ["Visual_Studio_Code_1.35_icon.svg", "ide", -120, "ide"],
+        ["cursor.svg", "ide", 200, "ide"],
+        ["antigravity.png", "ide", 160, "ide"],
+        ["IntelliJ_IDEA_Icon.svg", "ide", 120, "ide"],
+        ["android-studio.svg", "ide", 80, "ide"],
+        ["Xcode.svg", "ide", 40, "ide"],
+        ["vimlogo.svg", "ide", 0, "ide"],
+        ["nano", "ide", -40, "ide"],
+        ["claude-code.svg", "outer", -60, "agent"], ["opencode-logo-dark.svg", "outer", -20, "agent"],
+        ["windows11.svg", "outer", 20, "os"], ["Finder_Icon_macOS_Tahoe.png", "outer", 60, "os"], ["Tux.svg", "outer", 110, "os"]
+    ];
+
+    // groups: which node groups to reveal, e.g. ["ide"] or ["agent"]
+    // Starts fully colored like the cover, then every ring outside `groups` fades to dashed gray.
+    function orbit(el, groups) {
+        const { cx, cy, rings } = ORBIT;
+        const active = new Set(NODES.filter(n => groups.includes(n[3])).map(n => n[1]));
+        el("line", { x1: cx - 490, y1: cy, x2: cx + 490, y2: cy, stroke: "#E3E6EA", "stroke-width": 1 });
+        el("line", { x1: cx, y1: cy - 460, x2: cx, y2: cy + 500, stroke: "#E3E6EA", "stroke-width": 1 });
+        for (const ring in rings) {
+            const rr = rings[ring], on = active.has(ring);
+            const solid = { cx, cy, r: rr, fill: "none", stroke: ORBIT_COLORS[ring], "stroke-width": ring === "git" ? 2.5 : 2 };
+            if (on) el("circle", solid);
+            else {
+                el("circle", { cx, cy, r: rr, fill: "none", stroke: "#D5D9DE", "stroke-width": 1.5, "stroke-dasharray": "6 8", class: "fade-in" });
+                el("circle", { ...solid, class: "fade-out" });
+            }
+            const outer = ring === "outer";   // top of the outer ring hits the ruler, label it bottom-right instead
+            const lab = el("text", { x: outer ? cx + 355 : cx + 10, y: outer ? cy + 300 : cy - rr - 8, "font-family": "Google Sans Code, monospace", "font-size": 18,
+                fill: on ? "#E8710A" : "#B9BFC6" });
+            lab.textContent = ORBIT_LABELS[ring];
+        }
+        const ctAttrs = { x: cx, y: cy + 14, "text-anchor": "middle", "font-family": "Google Sans Code, monospace", "font-size": 40 };
+        if (active.has("git")) el("text", { ...ctAttrs, fill: "#1E8E3E" }).textContent = "</>";
+        else {
+            el("text", { ...ctAttrs, fill: "#C9CED4", class: "fade-in" }).textContent = "</>";
+            el("text", { ...ctAttrs, fill: "#1E8E3E", class: "fade-out" }).textContent = "</>";
+        }
+
+        // radius dimension to the revealed ring, drawn once the others have faded
+        const ar = [...active][0];
+        if (ar) {
+            const rr = rings[ar], a = (ar === "outer" ? -40 : -65) * Math.PI / 180;   // outer: dodge the Claude Code node
+            const ex = cx + Math.cos(a) * rr, ey = cy + Math.sin(a) * rr;
+            el("line", { x1: cx, y1: cy, x2: ex, y2: ey, stroke: "#E8710A", "stroke-width": 2,
+                class: "draw", style: "--len:" + rr + ";--d:1.5s" });
+            const g = el("g", { class: "pop", style: "--d:2.1s" });
+            el("circle", { cx: ex, cy: ey, r: 6, fill: "#E8710A" }, g);
+            const t = el("text", { x: ex + 12, y: ey - 10, "font-family": "Google Sans Code, monospace", "font-size": 22, fill: "#E8710A" }, g);
+            t.textContent = R_LABEL;
+        }
+
+        NODES.forEach(([file, ring, deg, group]) => {
+            const rr = rings[ring], on = groups.includes(group);
+            const x = cx + rr * Math.cos(deg * Math.PI / 180), y = cy + rr * Math.sin(deg * Math.PI / 180);
+            const R = ring === "git" ? 34 : 40, im = ring === "git" ? 44 : 50;
+            const g = el("g", {});
+            const node = { cx: x, cy: y, r: R, fill: "#fff", stroke: ORBIT_COLORS[ring], "stroke-width": on ? 2 : 1.5 };
+            if (on) el("circle", node, g);
+            else {
+                el("circle", { ...node, stroke: "#DCE0E4", "stroke-dasharray": "4 5" }, g);
+                el("circle", { ...node, fill: "none", class: "fade-out" }, g);
+            }
+            const cls = on ? "" : "dim";
+            if (file === "nano") {
+                el("text", { x, y: y + 8, "text-anchor": "middle", "font-family": "Google Sans Code, monospace",
+                    "font-size": 22, "font-weight": 700, fill: "#7c00cd", class: cls }, g).textContent = "nano";
+            } else {
+                el("image", { href: "../shcm-k65/res/" + file, x: x - im / 2, y: y - im / 2, width: im, height: im, class: cls }, g);
+            }
+        });
+    }
+
+    function decorate(slide, i) {
+        const r = rng(i * 7919 + 13);
+        const quiet = slide.hasAttribute("data-quiet");
+        let decor = slide.querySelector(".decor");
+        if (!decor) {
+            decor = document.createElement("div");
+            decor.className = "decor";
+            slide.prepend(decor);
+
+            const ns = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(ns, "svg");
+            svg.setAttribute("viewBox", "0 0 1920 1080");
+            svg.setAttribute("aria-hidden", "true");
+            const el = (tag, attrs, parent) => {
+                const e = document.createElementNS(ns, tag);
+                for (const k in attrs) e.setAttribute(k, attrs[k]);
+                (parent || svg).appendChild(e);
+                return e;
+            };
+
+            if (slide.dataset.ring) orbit(el, slide.dataset.ring.split(" "));
+            else compass();
+            decor.appendChild(svg);
+
+            function compass() {
+            // compass construction, mostly off the right edge
+            const big = slide.classList.contains("divider");
+            const corner = r() < .5;
+            const cx = big ? 1440 : 1860;
+            const cy = big ? 540 : (corner ? 60 : 1020);
+            const R = big ? 360 : 150 + r() * 90;
+            el("circle", { cx, cy, r: R, fill: "none", stroke: "#DCE0E4", "stroke-width": 1.5, "stroke-dasharray": "6 8" });
+            el("circle", { cx, cy, r: R * .62, fill: "none", stroke: big ? "#1E2226" : "#E3E6EA", "stroke-width": 1.5 });
+            if (big) el("circle", { cx, cy, r: R * .26, fill: "none", stroke: "#1E8E3E", "stroke-width": 2.5 });
+            el("line", { x1: cx - R - 40, y1: cy, x2: cx + R + 40, y2: cy, stroke: "#E3E6EA", "stroke-width": 1 });
+            el("line", { x1: cx, y1: cy - R - 40, x2: cx, y2: cy + R + 40, stroke: "#E3E6EA", "stroke-width": 1 });
+            const a = big ? -Math.PI / 4 - r() * .6 : (corner ? Math.PI * .75 : -Math.PI * .75) + (r() - .5) * .5;
+            const ex = cx + Math.cos(a) * R, ey = cy + Math.sin(a) * R;
+            el("line", { x1: cx, y1: cy, x2: ex, y2: ey, stroke: "#E8710A", "stroke-width": 1.5, opacity: big ? 1 : .55 });
+            el("circle", { cx: ex, cy: ey, r: 4, fill: "#E8710A", opacity: big ? 1 : .55 });
+            const t = el("text", { x: big ? ex + 12 : ex - 90, y: big ? ey - 8 : ey + (corner ? 30 : -14), fill: "#E8710A", opacity: big ? 1 : .6,
+                "font-family": "Google Sans Code, monospace", "font-size": 20 });
+            t.textContent = R_LABEL;
+            }
+
+            // scattered code glyphs on the margins
+            const big = slide.classList.contains("divider") && !slide.dataset.ring;
+            const ringed = !!slide.dataset.ring;
+            const custom = slide.dataset.glyphs ? slide.dataset.glyphs.split("|") : null;   // per-slide glyph text
+            const count = custom ? custom.length : ringed ? 2 : quiet ? 2 : (big ? 9 : 4);
+            const used = new Set();
+            for (let k = 0; k < count; k++) {
+                const g = document.createElement("span");
+                g.className = "glyph";
+                if (custom) g.textContent = custom[k];
+                else {
+                    let gi = Math.floor(r() * GLYPHS.length);
+                    while (used.has(gi)) gi = (gi + 1) % GLYPHS.length;
+                    used.add(gi);
+                    g.textContent = GLYPHS[gi];
+                }
+                let x, y;
+                if (big) { x = 1000 + r() * 780; y = 120 + r() * 760; }
+                else if (ringed) { x = 160 + k * 360 + r() * 140; y = 922 + r() * 14; }
+                else {
+                    if (r() < .6) { x = 760 + r() * 760; y = 82 + r() * 14; }
+                    else if (!slide.querySelector(".egg")) { x = 160 + r() * 620; y = 922 + r() * 14; }
+                    else { x = 760 + r() * 760; y = 82 + r() * 14; }
+                }
+                g.style.left = x + "px";
+                g.style.top = y + "px";
+                g.style.fontSize = (big ? 18 + Math.round(r() * 22) : 16 + Math.round(r() * 8)) + "px";
+                decor.appendChild(g);
+            }
+        }
+
+        // frame, rulers, registration marks
+        ["frame", "ruler-x", "ruler-y", "reg tl", "reg tr", "reg bl", "reg br"].forEach(c => {
+            const d = document.createElement("div");
+            d.className = c;
+            slide.appendChild(d);
+        });
+
+        // title block
+        const tb = document.createElement("div");
+        tb.className = "titleblock";
+        tb.innerHTML = '<span>' + t("sections." + slide.dataset.sec) + '</span><span class="tb-dot">•</span>' +
+            '<span class="tb-sheet">' + pad(i + 1) + '/' + pad(total) + '</span>';
+        if (i !== 0) slide.appendChild(tb);
+    }
+
+    // ---------- localization ----------
+    // Strings live in l10n/<lang>.json (default vi, override with ?lang=xx).
+    // The HTML keeps the Vietnamese text as a fallback for when the JSON can't load (e.g. opened via file://).
+    const lang = new URLSearchParams(location.search).get("lang") || "vi";
+    let STRINGS = {};
+
+    function t(key) {
+        const v = key.split(".").reduce((o, k) => (o == null ? o : o[k]), STRINGS);
+        return v == null ? FALLBACK[key] : v;
+    }
+
+    const FALLBACK = {
+        "sections.intro": "Mở đầu", "sections.ide": "IDE", "sections.llm": "Coding with LLMs",
+        "sections.git": "Git + GitHub", "sections.lab": "Thực hành", "sections.end": "Kết thúc"
+    };
+
+    function applyStrings() {
+        const missing = [];
+        document.querySelectorAll("[data-i18n]").forEach(el => {
+            const key = el.dataset.i18n;
+            const v = key.split(".").reduce((o, k) => (o == null ? o : o[k]), STRINGS);
+            if (v == null) { missing.push(key); return; }
+            if (el instanceof SVGElement) el.textContent = v;
+            else el.innerHTML = v;
+        });
+        document.querySelectorAll("[data-i18n-alt]").forEach(el => {
+            const v = t(el.dataset.i18nAlt);
+            if (v != null) el.alt = v;
+        });
+        if (STRINGS.ui && STRINGS.ui.title) document.title = STRINGS.ui.title;
+        if (missing.length) console.warn("l10n/" + lang + ".json is missing keys:", missing);
+    }
+
+    function warn(msg) {
+        console.warn(msg);
+        const b = document.createElement("div");
+        b.textContent = msg;
+        b.style.cssText = "position:fixed;top:8px;left:8px;z-index:20;padding:6px 12px;font:14px/1.4 monospace;" +
+            "background:#FEF1E6;color:#B4540A;border:1px solid #E8710A;border-radius:4px;max-width:90vw";
+        document.body.appendChild(b);
+        setTimeout(() => b.remove(), 8000);
+    }
+
+    async function loadStrings() {
+        try {
+            const res = await fetch("l10n/" + lang + ".json", { cache: "no-cache" });
+            if (!res.ok) throw new Error(res.status + " " + res.statusText);
+            STRINGS = await res.json();
+            applyStrings();
+        } catch (err) {
+            warn("Không tải được l10n/" + lang + ".json (" + err.message + "). Đang dùng chữ có sẵn trong HTML. " +
+                "Chạy `python3 -m http.server` trong thư mục slide rồi mở http://localhost:8000");
+        }
+    }
+
+    let cur = 0;
+    let ready = false;
+    // ?preview: render-only copy for the /ctl controller (no input, no sync)
+    const PREVIEW = new URLSearchParams(location.search).has("preview");
+    if (PREVIEW) document.documentElement.classList.add("preview");
+
+    // serve.py extras (remote control, phone mirror) only exist off GitHub Pages
+    const LIVE = location.protocol.startsWith("http") && !location.hostname.endsWith("github.io");
+
+    // tell the controller where we are (served by serve.py; silently no-op elsewhere)
+    function report() {
+        if (!ready || PREVIEW || !LIVE) return;
+        const s = slides[cur];
+        fetch("/api/state", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ slide: cur + 1, page: s._page || 0, pages: s.querySelectorAll(".page").length || 1, total })
+        }).catch(() => {});
+    }
+
+    // paged slides step through .page blocks before moving on
+    function setPage(slide, p) {
+        const pages = slide.querySelectorAll(".page");
+        slide._page = Math.max(0, Math.min(pages.length - 1, p));
+        pages.forEach((pg, i) => pg.classList.toggle("is-on", i === slide._page));
+        slide.querySelectorAll(".ico").forEach(b => b.classList.toggle("on", +b.dataset.page === slide._page));
+        slide.querySelectorAll(".pager i").forEach((d, i) => d.classList.toggle("on", i === slide._page));
+        const label = slide.querySelector(".pager span");
+        if (label) label.textContent = (slide._page + 1) + "/" + pages.length;
+        if (slide === slides[cur]) report();
+    }
+    slides.filter(s => s.classList.contains("paged")).forEach(s => {
+        setPage(s, 0);
+        s.querySelectorAll(".ico").forEach(b => b.addEventListener("click", e => {
+            e.stopPropagation();
+            setPage(s, +b.dataset.page);
+        }));
+    });
+    function step(dir) {
+        const s = slides[cur];
+        if (s.classList.contains("paged")) {
+            const last = s.querySelectorAll(".page").length - 1;
+            if (dir > 0 && s._page < last) return setPage(s, s._page + 1);
+            if (dir < 0 && s._page > 0) return setPage(s, s._page - 1);
+        }
+        const next = cur + dir;
+        show(next);
+        const t = slides[cur];
+        if (t.classList.contains("paged") && next === cur)
+            setPage(t, dir > 0 ? 0 : t.querySelectorAll(".page").length - 1);
+    }
+
+    function show(n) {
+        cur = Math.max(0, Math.min(total - 1, n));
+        slides.forEach((s, i) => s.classList.toggle("is-active", i === cur));
+        document.getElementById("progress").style.width = ((cur + 1) / total * 100) + "%";
+        if (!PREVIEW && location.hash !== "#" + (cur + 1)) history.replaceState(null, "", "#" + (cur + 1));
+        report();
+    }
+
+    // hash "#n" or "#n.p" (page p of a paged slide, "L" = last page)
+    function go(hash) {
+        const [a, b] = hash.replace("#", "").split(".");
+        show((parseInt(a, 10) || 1) - 1);
+        const s = slides[cur];
+        if (s.classList.contains("paged")) {
+            const n = s.querySelectorAll(".page").length;
+            setPage(s, b === "L" ? n - 1 : (parseInt(b, 10) || 0));
+        }
+    }
+
+    function fit() {
+        const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+        deck.style.transform = "translate(-50%, -50%) scale(" + s + ")";
+    }
+
+    addEventListener("resize", fit);
+    if (!PREVIEW) addEventListener("keydown", e => {
+        if (["ArrowRight", "PageDown", " ", "Enter", "l"].includes(e.key)) { e.preventDefault(); step(1); }
+        else if (["ArrowLeft", "PageUp", "Backspace", "h"].includes(e.key)) { e.preventDefault(); step(-1); }
+        else if (e.key === "Home") show(0);
+        else if (e.key === "End") show(total - 1);
+        else if (e.key === "f") {
+            if (document.fullscreenElement) document.exitFullscreen();
+            else document.documentElement.requestFullscreen();
+        }
+    });
+    if (!PREVIEW) addEventListener("click", e => {
+        if (e.target.closest("a")) return;
+        step(e.clientX > innerWidth / 3 ? 1 : -1);
+    });
+    addEventListener("hashchange", () => go(location.hash));
+
+    // remote control from /ctl
+    if (!PREVIEW && LIVE) {
+        const es = new EventSource("/api/events");
+        es.addEventListener("cmd", e => {
+            const c = JSON.parse(e.data);
+            if (c.cmd === "next") step(1);
+            else if (c.cmd === "prev") step(-1);
+            else if (c.cmd === "goto") go("#" + c.to);
+            else if (c.cmd === "sync") report();
+        });
+    }
+
+
+    // live phone mirror: stream only while the slide is on screen, follow the phone's rotation
+    const mirrorSlide = deck.querySelector(".mirror-slide");
+    if (mirrorSlide && LIVE) {
+        const phone = mirrorSlide.querySelector(".phone");
+        const screen = mirrorSlide.querySelector(".phone-screen");
+        const stage = mirrorSlide.querySelector(".phone-stage");
+        let timer = null;
+        function place(r) {
+            // Android rotation r turns the UI 90°·r counter-clockwise; capture stays portrait, so undo it here
+            const W = stage.clientWidth, H = stage.clientHeight, side = r % 2 === 1;
+            const k = side ? Math.min(W / 3104, H / 1469) : Math.min(W / 1469, H / 3104);
+            phone.style.transform = "translate(-50%, -50%) rotate(" + (-90 * r) + "deg) scale(" + k.toFixed(4) + ")";
+        }
+        function poll() {
+            fetch("/api/rot").then(r => r.json()).then(d => place(d.rot)).catch(() => {});
+        }
+        new MutationObserver(() => {
+            const on = mirrorSlide.classList.contains("is-active");
+            if (on && !timer) {
+                screen.src = "/mirror.mjpg?t=" + Date.now();
+                place(0); poll();
+                timer = setInterval(poll, 700);
+            } else if (!on && timer) {
+                clearInterval(timer); timer = null;
+                screen.removeAttribute("src");
+            }
+        }).observe(mirrorSlide, { attributes: true, attributeFilter: ["class"] });
+    }
+
+    loadStrings().then(() => {
+        slides.forEach(decorate);
+
+    // git diagrams fade in left to right, like a history being written
+    document.querySelectorAll("svg.sweep").forEach(svg => {
+        const vb = svg.viewBox.baseVal;
+        svg.querySelectorAll("circle, line, path, rect, text, polyline").forEach(el => {
+            let x = 0;
+            try { x = el.getBBox().x; } catch (e) {}
+            el.classList.add("sw");
+            el.style.setProperty("--d", (0.15 + 1.4 * Math.max(0, x - vb.x) / vb.width).toFixed(2) + "s");
+        });
+    });
+        fit();
+        ready = true;
+        go(location.hash);
+    });
+})();
+</script>
+</body>
+</html>
